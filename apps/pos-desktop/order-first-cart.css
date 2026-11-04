@@ -1,0 +1,240 @@
+/* FAST_FIRST only: accepted history fills remaining space; unsent lines live in a drawer. */
+.order-first-cart{gap:5px;overflow:hidden}
+.order-first-cart .fast-cart-head{flex:0 0 auto;margin:0;min-height:44px}
+.order-first-cart .fast-cart-head h2{font-size:21px;line-height:1.2}
+.order-first-assignments{display:flex;gap:6px;flex:0 0 auto;min-width:0}
+.order-first-assignments .order-first-assignment{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;flex:1;margin:0;padding:6px 9px;background:#edf9f4;border:1px solid #bce4d5;border-radius:10px;color:#156959;text-align:left;font-size:12px;font-weight:650;white-space:normal;box-shadow:none}
+.order-first-assignment span{min-width:0;overflow-wrap:anywhere}.order-first-assignment svg{width:20px;height:20px;flex-shrink:0}.order-first-assignment.waiter svg{display:none}
+.order-first-assignments .order-first-assignment:disabled{background:#f6f8f7;border-color:#e7edeb;color:#71817c;opacity:1}
+.order-first-type{display:flex;align-items:center;gap:8px;font-size:13px;color:#267da7;padding:4px 0}.order-first-type svg{width:24px;height:24px}
+.order-first-creator{font-size:11px;color:#7c938a;flex:0 0 auto}
+.order-first-body{display:flex;flex:1 1 0;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+.order-first-body .cash-package-history{position:relative;flex:1 1 0;min-height:0;max-height:none;overflow:auto;padding:0 3px 0 0;margin:0}
+.order-first-body .cash-package-history h3{margin:10px 45px 9px 0;font-size:12px}.order-first-body .cash-package{margin-bottom:7px}
+.order-first-body.has-draft .cash-package-history{flex:1 1 35%;min-height:52px}
+.order-first-drawer{display:flex;flex:1 1 65%;min-height:0;flex-direction:column;overflow:hidden;border:1px solid #c9e8da;background:#f9fdfb;border-radius:14px 14px 9px 9px;padding:8px}
+.order-first-drawer h3{flex:0 0 auto;margin:0 0 5px;font-size:13px;color:#276c59}
+.order-first-drawer .fast-cart-list,.order-first-cart:has(.cash-package-history) .order-first-drawer .fast-cart-list{flex:1 1 0;min-height:0;overflow:auto;margin:0}
+.order-first-drawer .fast-submit{flex:0 0 auto;min-height:44px;height:44px;font-size:14px;margin-top:7px}
+.order-first-empty{margin:auto;text-align:center;font-size:13px;padding:20px;max-width:260px}
+.order-first-cart .fast-cart-foot{padding-top:3px;flex:0 0 auto}
+.order-first-cart .fast-cart-foot .fast-discount-action{min-height:44px;margin:0;padding:5px 2px}
+.order-first-cart .fast-cart-foot .fast-grand{font-size:20px;line-height:1.3;padding:6px 2px;margin:0;min-height:37px}
+.order-first-cart .fast-cart-foot .order-first-batch-total{border:0}
+.order-first-payments{display:flex;gap:6px;padding-top:6px}
+.order-first-payments .order-first-pay{flex:1;min-width:0;min-height:49px;font-size:12px;white-space:normal;margin:0;padding:6px 3px;border-radius:10px;background:#069f86;color:#fff;border:1px solid #069f86;box-shadow:none;line-height:1.2}
+.order-first-payments .order-first-pay:disabled{opacity:.45}
+.pos-shell[data-sale-mode=COUNTER] .order-first-payments .order-first-pay{background:#267fab;border-color:#267fab}
+.order-first-cart button:focus-visible,.order-first-new:focus-visible{outline:3px solid #36bca0;outline-offset:1px}
+.fast-active-head .order-first-new{margin:0 0 0 auto;min-height:44px;background:#ffedb1;border:1px solid #f4d36b;color:#735517;border-radius:10px;font-size:12px;line-height:1.1;padding:7px 12px;white-space:nowrap;box-shadow:none;font-weight:750}
+.order-first-corrections{position:absolute;right:2px;top:0;min-width:44px;min-height:44px;margin:0;padding:3px;background:transparent;border:0;color:#537b6c;font-size:24px;box-shadow:none}
+.order-first-line-more{flex-shrink:0;min-width:44px;min-height:44px;padding:0;margin:0;background:transparent;border:0;font-size:23px;color:#6a877b;box-shadow:none}
+.order-first-split-methods{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}.order-first-split-methods select{min-width:0;min-height:44px;width:100%;border:1px solid #c8e3d6;border-radius:8px;padding:6px;font-size:13px;color:#2c6955;background:#f6fcf9}
+.order-first-mixed .cash-discount-input{font-size:26px!important}.order-first-mixed .cash-discount-input::placeholder{font-size:15px}
+.order-first-portion{border:1px solid #e0ece6;border-radius:12px;padding:12px;margin-bottom:10px}.order-first-portion input{min-height:44px;max-width:100px}
+@media(max-height:800px){.order-first-cart{padding:10px;gap:3px}.order-first-cart .fast-cart-head h2{font-size:18px}.order-first-cart .fast-cart-foot .fast-grand{font-size:18px;min-height:30px;padding:3px 2px}.order-first-body{gap:5px}.order-first-drawer{padding:6px}.order-first-cart .cash-package summary{padding:7px}.order-first-cart .fast-cart-foot{gap:0}.order-first-cart .cash-basket-row.fast-cart-line{padding:6px}.order-first-drawer .fast-submit{margin-top:4px}}
+/* POS-008: compact text identity and full-height package; no motion. */
+.order-first-assignments{display:flex;flex-direction:column;gap:0;align-items:stretch}
+.order-first-assignments:empty{display:none}
+.order-first-assignments .order-first-assignment{display:flex;flex:0 0 auto;justify-content:flex-start;gap:7px;min-height:44px;margin:0;padding:5px 2px;border:0;background:transparent;border-radius:5px;color:#028a79;box-shadow:none;font-size:13px;text-align:left}
+.order-first-assignments .order-first-assignment:hover{background:#f1faf7}
+.order-first-assignment-arrow{font-size:20px;line-height:1;color:#6c9f90}
+.order-first-assignments .order-first-assignment.readonly,.order-first-assignments .order-first-assignment.readonly:hover{color:#526b62;background:transparent;cursor:default}
+.order-first-assignments .order-first-assignment:disabled{background:transparent;color:#71817c;opacity:.7}
+.order-first-assignments .order-first-creator,.order-first-assignments .order-first-type{padding:4px 2px;margin:0;font-size:13px;line-height:1.4;color:#71837d}
+.order-first-modes{flex:0 0 auto;margin:4px 0;gap:7px}
+.order-first-modes button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;margin:0;border:1px solid #dcebe5;border-radius:10px;background:#f7fbf9;box-shadow:none;font-size:13px}
+.order-first-modes button.selected{color:#007f6c;background:#dff6ed;border-color:#9cdac8}
+.order-first-modes svg{width:22px;height:22px}
+.order-first-history-toggle{flex:0 0 auto;min-height:44px;margin:0;padding:5px 2px;border:0;border-radius:5px;background:transparent;box-shadow:none;color:#387f6c;font-size:12px;text-align:left}
+.order-first-body.has-draft:not(.history-view) .cash-package-history{display:none}
+.order-first-body.has-draft.history-view .order-first-drawer{display:none}
+.order-first-body.has-draft.history-view .cash-package-history{display:block;flex:1 1 0;min-height:0;max-height:none}
+.order-first-body .order-first-drawer{flex:1 1 0;margin:0;width:100%;max-width:none;animation:none;transition:none}
+.order-first-cart .fast-cart-head h2{overflow-wrap:anywhere}
+/* Compact cashier composition: identity, type and actions share one toolbar. */
+.order-first-cart .fast-cart-head{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:nowrap}
+.order-first-cart .fast-cart-head h2{flex:1 1 auto;min-width:72px;font-size:17px;line-height:1.15;margin:0}
+.order-first-cart .fast-cart-head .order-first-modes{display:flex;flex:0 0 auto;gap:2px;margin:0;padding:3px;border:1px solid #d8e7e1;border-radius:11px;background:#f5f8f6}
+.order-first-cart .fast-cart-head .order-first-modes button{width:auto;min-width:49px;min-height:38px;padding:4px 7px;border:0;border-radius:8px;background:transparent;font-size:11px;color:#56736c;gap:3px}
+.order-first-cart .fast-cart-head .order-first-modes button.selected{background:#fff;color:#087d69;box-shadow:0 1px 4px #17483918}
+.order-first-cart .fast-cart-head .order-first-modes svg{width:15px;height:15px}
+.order-first-cart .fast-cart-head .fast-clear,.order-first-cart .fast-cart-head .cash-custom-add{flex:0 0 38px;width:38px;min-width:38px;min-height:38px;height:38px;padding:8px;border-radius:9px}
+.order-first-cart .fast-cart-head .fast-clear svg,.order-first-cart .fast-cart-head .cash-custom-add svg{width:19px;height:19px}
+.order-first-cart .order-first-assignments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:1px 0 5px}
+.order-first-cart .order-first-assignments .order-first-assignment{min-height:40px;padding:4px 7px;border:1px solid #e3ede9;border-radius:8px;background:#fff;color:#286d60;font-size:11px;line-height:1.2}
+.order-first-cart .order-first-assignments .order-first-creator,.order-first-cart .order-first-assignments .order-first-type{grid-column:1/-1;font-size:11px;padding:0 2px}
+.order-first-cart .order-first-drawer{border:0;border-top:1px solid #e4eee9;border-radius:0;background:transparent;padding:7px 0 0}
+.order-first-cart .order-first-drawer h3{font-size:12px;font-weight:700;color:#567970;margin:0 0 4px}
+.order-first-cart .cash-package{background:transparent;border:0;border-bottom:1px solid #e7efeb;border-radius:0;margin:0}
+.order-first-cart .cash-package summary{padding:7px 5px 7px 21px;min-height:42px}
+.order-first-cart .cash-package summary:before{left:6px}
+.order-first-cart .cash-package-lines{padding:0 3px 5px 21px}
+.order-first-cart .cash-basket-row.fast-cart-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:3px 6px;border:0;border-bottom:1px solid #e8f0ed;border-radius:0;background:transparent;margin:0;padding:4px 1px}
+.order-first-cart .cash-basket-details{grid-column:1;grid-row:1;min-width:0}
+.order-first-cart .cash-basket-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.order-first-cart .cash-basket-selection,.order-first-cart .cash-basket-unit{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;font-size:10px}
+.order-first-cart .cash-basket-total{grid-column:2;grid-row:1;font-size:12px}
+.order-first-cart .cash-basket-bottom{grid-column:3;grid-row:1;display:flex;flex-wrap:nowrap;gap:2px}
+.order-first-cart .cash-basket-quantity{gap:0;border-radius:8px}
+.order-first-cart .cash-basket-quantity button{width:36px;min-width:36px;min-height:40px;height:40px}
+.order-first-cart .cash-basket-quantity span{width:23px;font-size:12px}
+.order-first-cart .cash-line-more{width:34px;min-width:34px;height:40px;min-height:40px;margin:0;padding:0;border:0;background:transparent;color:#66847a;font-size:21px;box-shadow:none}
+.order-first-cart .cash-basket-comment{grid-column:1/-1;grid-row:2;font-size:10px;padding:0 2px}
+.cash-line-actions-popover{position:fixed;inset:auto;margin:0;padding:6px;max-width:calc(100vw - 16px);border:1px solid #dbe8e1;border-radius:12px;background:#fff;box-shadow:0 7px 22px #163e3526;color:#286d60}
+.cash-line-actions-popover:popover-open{display:flex;gap:4px}
+.cash-line-actions-popover::backdrop{background:transparent}
+.cash-line-actions-popover .cash-line-action{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;min-height:44px;margin:0;padding:11px;border:0;border-radius:8px;background:#f0f8f4;color:#28775f;box-shadow:none}
+.cash-line-actions-popover .cash-line-action.remove{background:#fff2ef;color:#ce594e}
+.cash-line-actions-popover .cash-line-action:hover{background:#e0f1e7}
+.cash-line-actions-popover .cash-line-action.remove:hover{background:#ffe3de}
+.cash-line-actions-popover svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.cash-line-actions-popover .cash-line-action:focus-visible{outline:2px solid #168c71;outline-offset:0}
+.fast-active-list{--active-card-width:145px;--active-card-height:98px}
+.fast-active-list>.fast-active-card,.cash-parked-wrap{flex:0 0 var(--active-card-width);width:var(--active-card-width);height:var(--active-card-height)}
+.fast-active-list .fast-active-card{min-height:var(--active-card-height);margin:0}
+.fast-active-list .fast-active-card.selected{border-color:#5eb8a5;box-shadow:inset 0 0 0 1px #5eb8a5,0 0 0 3px #0b9d8414,0 0 12px #0b9d8412}
+.cash-parked-wrap{position:relative}.cash-parked-wrap .cash-parked-card{width:100%;height:100%}.cash-parked-card strong{padding-right:18px}.cash-parked-discard{position:absolute;right:3px;top:3px;min-width:30px;min-height:30px;margin:0;padding:0;border:0;background:transparent;color:#66847a;font-size:19px;box-shadow:none}
+.cash-draft-recovery{display:flex;gap:6px}.cash-draft-recovery button,.cash-draft-resume{min-height:44px;margin:0;padding:5px 8px;background:#fff;border:1px solid #cbded7;color:#286d60;font-size:11px;border-radius:8px}
+@media(max-width:410px){.order-first-cart .fast-cart-head{flex-wrap:wrap}.order-first-cart .fast-cart-head h2{flex-basis:calc(100% - 90px)}.order-first-cart .fast-cart-head .order-first-modes{order:3;width:100%;justify-content:center}.order-first-cart .cash-basket-row.fast-cart-line{grid-template-columns:minmax(0,1fr) auto}.order-first-cart .cash-basket-bottom{grid-column:1/-1;grid-row:2;justify-content:flex-end}.order-first-cart .cash-basket-comment{grid-row:3}}
+@media(pointer:coarse){.order-first-cart .fast-cart-head .order-first-modes button,.order-first-cart .fast-cart-head .fast-clear,.order-first-cart .fast-cart-head .cash-custom-add,.order-first-cart .cash-basket-quantity button,.order-first-cart .cash-line-more{min-height:44px;height:44px}.order-first-cart .cash-basket-quantity button{width:44px;min-width:44px}}
+/* POS-011: one chronological list, with confirmed and composing positions. */
+.order-first-cart{gap:8px}
+.order-first-cart .fast-cart-head h2{font-size:22px;min-width:0;font-weight:800}
+.order-first-cart .fast-cart-head{gap:6px;min-height:44px;margin:0}
+.order-first-draft-actions,.order-first-cart .fast-cart-head .order-first-corrections{position:static;flex:0 0 38px;width:38px;height:38px;min-height:38px;min-width:38px;padding:0;margin:0;border:1px solid #dfebe6;border-radius:9px;background:#f6faf8;color:#4d796c;font-size:23px;box-shadow:none}
+.order-first-cart>.order-first-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0 0 2px;flex:0 0 auto}
+.order-first-cart>.order-first-modes button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:54px;padding:8px 10px;margin:0;border:1px solid #e0ebe7;background:#fafcfc;border-radius:11px;font-size:13px;color:#315461}
+.order-first-cart>.order-first-modes button.selected{background:#edf9f4;border-color:#39af94;color:#116f5d;box-shadow:0 2px 6px #258f7310}
+.order-first-cart>.order-first-modes svg,.order-first-table-icon{width:28px;height:28px;flex:0 0 28px;object-fit:contain}
+.order-first-table-icon{display:block}
+.order-first-person-icon{width:25px;height:25px;flex:0 0 25px;fill:#459a85}
+.order-first-cart .order-first-assignments{gap:6px;margin:0}
+.order-first-cart .order-first-assignments .order-first-assignment{min-height:48px;font-size:12px;gap:7px}
+.order-first-assign-popover{position:fixed;inset:auto;margin:0;padding:7px;width:240px;max-width:calc(100vw - 16px);border:1px solid #d9e8e1;border-radius:12px;background:#fff;box-shadow:0 9px 28px #163e3526;color:#214d43}
+.order-first-assign-popover::backdrop{background:transparent}
+.order-first-assign-choice{display:grid;grid-template-columns:28px 1fr;gap:2px 9px;width:100%;min-height:58px;margin:0;padding:8px;border:0;background:transparent;text-align:left;box-shadow:none;border-radius:8px;font-size:12px}
+.order-first-assign-choice img,.order-first-assign-choice>.order-first-person-icon{grid-row:1/3;align-self:center}
+.order-first-assign-choice small{grid-column:2;color:#7b8e85;font-size:11px}
+.order-first-assign-choice:hover:not(:disabled){background:#edf8f3;box-shadow:none}
+.order-first-cart .order-first-timeline{position:relative;display:block;flex:1 1 0;min-height:0;overflow:auto;overflow-anchor:none;overscroll-behavior:contain;padding:0 2px 0 0;scrollbar-width:thin;gap:0}
+.order-first-batch-rule{display:flex;align-items:center;gap:8px;padding:8px 2px 5px;font-size:10px;font-weight:650;line-height:1.3;color:#4f8c74}
+.order-first-batch-rule:after{content:'';height:1px;flex:1;background:#acd9c0;order:1}
+.order-first-batch-rule time{order:2;color:#5c8977;font-size:10px;font-weight:500}
+.order-first-batch-rule.accepted>span{min-width:0;overflow-wrap:anywhere}
+.order-first-draft .order-first-batch-rule{color:#9a782c}
+.order-first-draft .order-first-batch-rule:after{background:#e9ca76}
+.order-first-cart .order-first-accepted .cash-package-lines{padding:0;margin:0}
+.order-first-accepted .cash-package-line{display:flex;align-items:center;gap:7px;padding:7px 6px;border:0;border-bottom:1px solid #d9ede2;background:#f0f9f3}
+.order-first-accepted .cash-package-line>div:first-child{flex:1;min-width:0}
+.order-first-accepted .cash-package-line strong{font-size:12px;display:block;overflow-wrap:anywhere}
+.order-first-accepted .cash-package-line small{display:block;font-size:10px;color:#6b8476;line-height:1.4}
+.order-first-accepted .cash-package-line.cancelled{background:#f4f6f4;color:#8b9890;opacity:.7}
+.order-first-accepted .cash-package-lines>small{display:block;font-size:9px;padding:3px 5px;color:#758a80}
+.order-first-accepted .cash-issued{margin:0;gap:4px;font-size:10px;white-space:nowrap}
+.order-first-accepted .cash-issued input{width:17px;height:17px}
+.order-first-accepted .order-first-line-more{width:30px;min-width:30px;min-height:38px;height:38px}
+.order-first-draft{background:#fffcf1}
+.order-first-cart .order-first-draft .fast-cart-list{display:block;flex:none;min-height:0;overflow:visible;margin:0;padding:0}
+.order-first-cart .order-first-draft .cash-basket-row{background:#fff9e8;border-bottom-color:#efe2bb;padding:5px 4px}
+.order-first-cart .order-first-draft .cash-basket-quantity{background:#fffdf5;border-color:#ecddad}
+.order-first-cart .fast-cart-foot{padding-top:2px}
+.order-first-cart .fast-cart-foot .order-first-batch-total{font-size:13px;min-height:23px;padding:3px 2px;color:#6b8074;border:0}
+.order-first-cart .fast-cart-foot .fast-grand:not(.order-first-batch-total){font-size:22px;min-height:36px;padding:5px 2px}
+.order-first-cart .order-first-payments{padding-top:4px;flex:0 0 auto}
+.order-first-cart .order-first-payments:empty{display:none}
+.order-first-cart .order-first-payments .fast-submit{margin:0;min-height:48px;height:48px;font-size:14px;border-radius:10px}
+.order-first-empty{margin:35% auto;text-align:center;color:#78938b}
+@media(pointer:coarse){.order-first-draft-actions,.order-first-cart .fast-cart-head .order-first-corrections{width:44px;flex-basis:44px;min-height:44px;height:44px}.order-first-accepted .order-first-line-more{width:44px;min-width:44px;min-height:44px}.order-first-accepted .cash-issued{min-height:44px}}
+/* POS-012: compact state badges and the same waiter identity as the assignment popover. */
+.order-first-cart .order-first-assignment.waiter{color:#214d43;font-size:12px;font-weight:400}
+.order-first-assign-choice.waiter{color:#214d43;font-weight:400}
+.order-first-assign-choice.waiter .order-first-person-icon,.order-first-cart .order-first-assignment.waiter .order-first-person-icon{display:block;width:25px;height:25px;flex:0 0 25px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.order-first-waiter-text{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.order-first-waiter-text>span{font-size:12px;line-height:1.3}
+.order-first-waiter-text small{font-size:11px;line-height:1.3;color:#7b8e85;font-weight:400}
+.fast-active-list .fast-active-card{padding:6px 9px;gap:1px;grid-template-columns:minmax(0,1fr)}
+.fast-active-list .fast-active-card strong{font-size:16px;line-height:19px}
+.fast-active-list .fast-active-card small{font-size:10px;line-height:12px;color:#6a8790}
+.fast-active-list .fast-card-count{font-size:10px;line-height:12px}
+.fast-active-list .fast-active-card b{position:absolute;left:9px;bottom:6px;max-width:calc(100% - 52px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;line-height:16px}
+.fast-active-list .fast-active-card time{right:8px;bottom:7px;font-size:10px;line-height:14px}
+.fast-active-list .fast-active-card.waiting{background:#fffbef;border-color:#f3dfa2}
+.fast-active-list .fast-active-card.sent.table{background:#edfaf5;border-color:#c5e9dc}
+.fast-active-list .fast-active-card.sent.counter{background:#f0f7ff;border-color:#d0e4ff}
+.fast-active-list .fast-order-badge{display:inline-flex;justify-self:start;align-items:center;gap:4px;max-width:100%;height:18px;padding:2px 6px;border-radius:12px;font-size:10px;font-weight:700;line-height:14px;white-space:nowrap}
+.fast-order-badge svg{width:13px;height:13px;flex:0 0 13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.fast-order-badge.waiting{background:#fff0bb;color:#937019}
+.fast-order-badge.sent{background:#d6f4e5;color:#167854}
+.fast-order-badge.takeaway{background:#ddecff;color:#2670b5}
+.fast-active-list .fast-active-card.selected{border-color:#54b49e;box-shadow:inset 0 0 0 1px #54b49e,0 0 0 3px #0b9d8414}
+/* Completed orders reuse the cart column as a read-only receipt. */
+.fast-sale-row.selected{outline:2px solid #45b89c;outline-offset:1px;box-shadow:0 0 0 3px #b9eadb66}
+.order-first-sale-identity{display:flex;flex-direction:column;gap:4px;flex:0 0 auto;color:#647d74;font-size:12px;overflow-wrap:anywhere}
+.order-first-sale-identity small{font-size:11px}
+.order-first-sale-status{align-self:flex-start;border-radius:7px;background:#dff5ec;color:#168261;padding:4px 9px;font-size:12px}
+.order-first-sale-status.refunded{background:#fff0bf;color:#936712}
+.order-first-sale-lines{gap:0}
+.order-first-sale-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 3px;border-bottom:1px solid #dcebe4;font-size:12px}
+.order-first-sale-line>div{grid-row:1/3;min-width:0;display:flex;flex-direction:column;gap:3px;overflow-wrap:anywhere}
+.order-first-sale-line>span{font-size:11px;color:#74877e;text-align:right}
+.order-first-sale-line>b{text-align:right}
+.order-first-sale-line small{font-size:11px;color:#74877e;white-space:pre-wrap}
+.order-first-sale-payment-info{padding:9px 3px;color:#55746a;font-size:12px;overflow-wrap:anywhere}
+.order-first-sale-payment-info p{margin:4px 0}.order-first-sale-payment-info small{display:block;font-size:11px}
+.order-first-completed .fast-total-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#6e8278;margin:3px 0}
+.order-first-completed .order-first-refund{width:100%;min-height:44px;margin:8px 0 0;background:#ffedaf;border:1px solid #efce6a;border-radius:10px;box-shadow:none;color:#785512;font-weight:700}
+.order-first-completed .order-first-refund:hover{background:#ffe493}.order-first-completed .order-first-refund:disabled{opacity:.55;cursor:default}
+.order-first-completed .order-first-return{width:100%;min-height:36px;margin:4px 0 0;border:0;background:transparent;box-shadow:none;color:#367f6d;font-size:12px}
+.order-first-cart .cash-draft-warning{color:#a47716;background:#fff0c3;border-radius:4px;padding:3px 5px;white-space:normal}
+.cash-draft-review{width:min(440px,calc(100vw - 32px))}
+.cash-draft-review-line{padding:10px 0;border-bottom:1px solid #dce9e1;font-size:13px;overflow-wrap:anywhere}
+.cash-draft-review-line p{margin:5px 0;color:#986c10}.cash-draft-review-line small{display:block;margin:4px 0;color:#668177}
+.order-first-line-popover{position:fixed;inset:auto;margin:0;width:110px;padding:5px;display:flex;gap:5px;border:1px solid #d5e8e1;border-radius:12px;background:#fff;box-shadow:0 12px 30px #17363b30;z-index:80}
+.order-first-line-popover:not(:popover-open){display:none}.order-first-popover-action{display:grid;place-items:center;flex:1;min-width:44px;min-height:44px;margin:0;padding:0;border:0;border-radius:9px;background:#eff8f4;color:#008f7d;font-size:24px;box-shadow:none}.order-first-popover-action.cancel{background:#fff2ef;color:#bd554d}
+.order-first-cancel-dialog{width:min(440px,calc(100vw - 32px));padding:24px;overflow-wrap:anywhere;border-radius:18px}.order-first-cancel-dialog>strong{display:block;font-size:18px}.order-first-cancel-dialog>p{color:#607b7d}
+.order-first-cancel-counter{display:flex;align-items:center;justify-content:center;gap:16px;margin:16px 0}.order-first-cancel-counter button{width:46px;height:46px;min-height:46px;margin:0;border:1px solid #bfe6dc;border-radius:12px;background:#eaf8f2;color:#008f7d;font-size:24px}.order-first-cancel-counter strong{min-width:36px;text-align:center;font-size:22px;font-variant-numeric:tabular-nums}.order-first-cancel-counter button:disabled{opacity:.4}
+.order-first-cancel-reasons{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 16px}.order-first-cancel-reasons button{min-height:38px;margin:0;padding:7px 10px;border:1px solid #d5e8e1;border-radius:999px;background:#f4fbf8;color:#2d6862;font-size:12px}.order-first-cancel-impact{font-weight:700}.order-first-cancel-warning{color:#ae6643!important}.order-first-cancel-quote{padding:12px;border-radius:11px;background:#eaf8f2;color:#17363b}.order-first-cancel-quote p{margin:0 0 5px}.order-first-cancel-dialog .order-first-cancel-confirm{background:#008f7d;border-color:#008f7d;color:#fff}
+.order-first-comment-portion{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 0;border-bottom:1px solid #e5eee9}.order-first-comment-portion>span{flex:1;min-width:110px}.order-first-comment-portion .cash-comment-quantity{flex:none;margin:0}.order-first-comment-portion .cash-comment-quantity span{flex:none}.order-first-comment-portion button{min-height:42px}
+/* Blue fulfilled quantity is distinct from the yellow draft quantity editor. */
+.cash-fulfillment-counter{display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:2px;color:#2875a6}
+.cash-fulfillment-counter>small{font-size:10px;color:#2875a6!important;margin:0!important}
+.cash-fulfillment-controls{display:flex;align-items:center;border:1px solid #b7d7ee;border-radius:8px;overflow:hidden;background:#eaf5ff}
+.cash-fulfillment-controls button{width:30px;min-width:30px;min-height:34px;height:34px;padding:0;margin:0;border:0;border-radius:0;background:#deeffd;color:#2574a6;box-shadow:none;font-size:17px}
+.cash-fulfillment-controls span{min-width:35px;text-align:center;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:#236a98}
+.cash-fulfillment-controls button:disabled{opacity:.38;cursor:default}
+.cash-fulfillment-counter.complete .cash-fulfillment-controls{border-color:#75b7df;background:#d5edff}
+.cash-fulfillment-recovery{font-size:10px;min-height:26px;padding:3px;margin:0;max-width:110px}
+@media(pointer:coarse){.cash-fulfillment-controls button{width:44px;min-width:44px;height:44px;min-height:44px}}
+/* POS-017: direct draft assignments and local elapsed time. */
+.order-first-cart .fast-cart-head .order-first-head-assignment{display:flex;align-items:center;justify-content:center;gap:3px;flex:0 1 72px;min-width:38px;max-width:72px;height:38px;min-height:38px;margin:0;padding:4px;border:1px solid #d6e9df;border-radius:9px;background:#f4faf7;color:#206b5a;box-shadow:none;font-size:10px}
+.order-first-cart .fast-cart-head .order-first-head-assignment svg,.order-first-cart .fast-cart-head .order-first-head-assignment img{width:17px;height:17px;flex:0 0 17px;object-fit:contain}
+.order-first-cart .fast-cart-head .order-first-head-assignment span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.order-first-cart .fast-cart-head .order-first-head-assignment:disabled{opacity:.55}
+.fast-active-list{--active-card-height:110px}
+.fast-active-list .fast-active-card .fast-order-elapsed{position:absolute;right:8px;bottom:23px;display:block;width:auto;max-width:calc(100% - 16px);color:#416d65;font-size:10px;font-weight:700;line-height:14px;font-variant-numeric:tabular-nums;text-align:right}
+@media(pointer:coarse){.order-first-cart .fast-cart-head .order-first-head-assignment{height:44px;min-height:44px}}
+/* POS-018: table/order identity above separate type and state badges. */
+.fast-identity-list{--active-card-height:132px}
+.fast-active-list .fast-identity-card{align-content:start;gap:3px}
+.fast-active-list .fast-identity-card strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fast-active-list .fast-identity-card .fast-card-order-number{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#385f68;font-size:11px;font-weight:700}
+.fast-active-list .fast-identity-card .fast-type-badge{display:inline-flex;align-items:center;justify-self:start;width:max-content;max-width:100%;min-height:20px;padding:2px 8px;border-radius:7px;font-size:11px;font-weight:800;line-height:16px;white-space:nowrap}
+.fast-active-list .fast-identity-card .fast-type-badge.hall{background:#bce9dc;color:#075f4a;border:1px solid #78ceb4}
+.fast-active-list .fast-identity-card .fast-type-badge.takeaway{background:#c9e2ff;color:#145b9c;border:1px solid #82b7f0}
+.fast-active-list .fast-identity-card .fast-order-badge{justify-self:start}
+.fast-active-list .fast-identity-card .fast-card-count{margin-top:1px}
+/* Cashier order actions: one clear cancellation card and a secondary history section. */
+.order-first-actions-dialog.finance-dialog{position:relative;box-sizing:border-box;width:min(430px,calc(100vw - 32px));max-width:430px;max-height:90dvh;overflow:auto;padding:22px;border:1px solid #dce8e2;border-radius:20px;background:#fff;box-shadow:0 22px 60px #173d3533;color:#173d38}
+.order-first-actions-dialog>h2{margin:0 40px 17px 0;font-size:21px;line-height:1.25}
+.order-first-actions-dialog .order-first-actions-close{position:absolute;top:15px;right:15px;display:grid;place-items:center;min-width:36px;width:36px;height:36px;min-height:36px;margin:0;padding:0;border:0;border-radius:10px;background:#f2f6f4;color:#4e6e64;font-size:25px;line-height:1;box-shadow:none}
+.order-first-actions-dialog .finance-actions{display:grid;gap:13px;margin:0;padding:0;border:0;background:transparent}
+.order-first-actions-dialog .order-first-cancel-card{display:grid;grid-template-columns:38px minmax(0,1fr) 14px;align-items:center;gap:11px;width:100%;min-width:0;min-height:70px;margin:0;padding:12px;border:1px solid #efc9bc;border-radius:13px;background:#fff3ef;color:#963f31;text-align:left;box-shadow:none}
+.order-first-actions-dialog .order-first-cancel-card:hover{background:#ffeae3;border-color:#deab9c}
+.order-first-actions-dialog .order-first-cancel-card svg{width:38px;height:38px;padding:8px;border-radius:10px;background:#ffe2d8;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.order-first-cancel-card-copy{display:grid;gap:3px;min-width:0}.order-first-cancel-card-copy strong{font-size:14px;line-height:1.25}.order-first-cancel-card-copy small{font-size:11px;line-height:1.35;color:#a36759}.order-first-cancel-card-arrow{font-size:24px;color:#ba7564}
+.order-first-actions-dialog .finance-actions>details{border:1px solid #e1ebe7;border-radius:11px;background:#f8fbf9;padding:0 12px;color:#547369;font-size:12px}
+.order-first-actions-dialog .finance-actions>details summary{padding:11px 0;cursor:pointer;font-weight:700}
+.order-first-actions-dialog .finance-actions>details[open]{padding-bottom:10px}
+.order-first-actions-dialog .finance-actions>details .card{margin:7px 0;padding:10px;background:#fff;border-radius:9px}
+@media(pointer:coarse){.order-first-actions-dialog .order-first-actions-close{min-width:44px;width:44px;height:44px;min-height:44px}.order-first-actions-dialog .order-first-cancel-card{min-height:76px}}

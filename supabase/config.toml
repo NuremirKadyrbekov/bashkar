@@ -1,0 +1,23 @@
+project_id = "bashkar"
+
+[functions.register-server]
+# The handler checks the bearer token online using Auth /user. This supports
+# projects with asymmetric JWT signing keys; it never trusts decoded claims.
+verify_jwt = false
+
+
+[functions.platform-admin]
+# Online Auth /user + server-only platform_admins membership on every action.
+verify_jwt = false
+
+[functions.menu-sync]
+# Authenticated by fresh challenge + registered Ed25519 device proof, not a browser JWT.
+verify_jwt = false
+
+[functions.menu-photo]
+# Desktop uses a one-time device grant. Remote Owner JWT is checked online in the handler.
+verify_jwt = false
+
+[functions.public-menu]
+# Public GET access is limited by owner opt-in and a server-only branch projection.
+verify_jwt = false

@@ -1,0 +1,234 @@
+import {CheckoutService} from './modules/orders/checkout-service';
+import {FulfillmentService} from './modules/orders/fulfillment-service';
+import {registerServiceClientApi} from './service-client-api';
+import type {PrintService} from './modules/printing/print-service';
+import type {NetworkService} from './modules/waiter/network-service';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { uuidPattern } from './command-bus';
+import { PosError, requireCondition } from './errors';
+import { object } from './modules/menu/catalog';
+import { permissionKeys, hasPermission } from './modules/auth/permissions';
+import { PinThrottle, type PinService } from './modules/auth/pin-service';
+import type { AuthService } from './modules/auth/auth-service';
+import type { CloudOwnerAuth } from './modules/auth/cloud-owner-auth';
+import type { MenuService } from './modules/menu/menu-service';
+import { ShiftFinanceService } from './modules/shifts/shift-finance-service';
+import type { ShiftService } from './modules/shifts/shift-service';
+import type {MenuSyncService} from './modules/menu/menu-sync-service';
+import type { TableService } from './modules/tables/table-service';
+import type { FinanceService } from './modules/orders/finance-service';
+import type { OrderService } from './modules/orders/order-service';
+import type { TableCloudSyncService } from './modules/tables/table-cloud-sync-service';
+import { CashDraftService } from './modules/orders/cash-draft-service';
+import type {buildOverviewMetrics} from './modules/analytics/overview-metrics';
+import type {buildProductMetrics} from './modules/analytics/product-metrics';
+type LocalOverview=ReturnType<typeof buildOverviewMetrics>;
+type LocalProducts=ReturnType<typeof buildProductMetrics>;
+export type OperationalServices = {finance:FinanceService;auth:AuthService;cashDraftChanged?:()=>void;branchDisplayName?:string;ownerCloud?:CloudOwnerAuth;menuSync?:MenuSyncService;tableCloudSync?:TableCloudSyncService;analyticsOverview?:(from:number,to:number,granularity:'hour'|'day')=>LocalOverview;analyticsProducts?:(from:number,to:number)=>LocalProducts;analyticsSyncStatus?:()=>{enabled:boolean;lastSuccessAt:number|null;lastError:string|null;pendingFacts:number};shiftCloudStatus?:()=>{enabled:boolean;pendingReports:number;pendingSales:number;pendingRefunds:number;pendingStaff:number;nextAttemptAt:number|null;lastError:string|null};menuPhotoGrant?:(token:string,itemId:string,expectedRevision:number,operation:'READ'|'UPLOAD'|'REMOVE')=>{grant:string;mediaUrl:string;publishableKey:string};pins?:PinService;menu:MenuService;shifts:ShiftService;tables:TableService;orders:OrderService;printing?:PrintService;waiterNetwork?:NetworkService};
+export function registerApi(app:FastifyInstance, services:()=>OperationalServices, onStorageFailure:(code:string)=>void = () => {}) {
+  app.addHook('onRequest',async(request,reply)=>{
+    reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff');
+    const host=request.headers.host??'';
+    requireCondition(/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host),'INVALID_HOST',403);
+    // Native Desktop main process only. Waiter HTTPS uses a separate adapter;
+    // no cookies, no permissive CORS and no browser bearer storage.
+    requireCondition(!request.headers.origin && !request.headers['sec-fetch-site'],'BROWSER_TRANSPORT_UNAVAILABLE',403);
+    if(request.method!=='GET')requireCondition(request.headers['content-type']?.split(';')[0]==='application/json','JSON_REQUIRED',415);
+  });
+  app.addHook('preHandler',async request=>{
+    const path=request.url.split('?')[0];
+    if(['/api/v1/auth/login','/api/v1/auth/pin','/api/v1/auth/owner-cloud','/api/v1/auth/logout'].includes(path)||path.startsWith('/api/v1/activation/')||path.startsWith('/api/v1/system/'))return;
+    const header=request.headers.authorization;
+    if(typeof header!=='string'||!header.startsWith('Bearer '))return;
+    const current=services().auth.current(header.slice(7),undefined,true);
+    if(current.method==='CLOUD_OWNER'){
+      requireCondition(services().ownerCloud,'OWNER_CLOUD_UNAVAILABLE',503);
+      if(path.startsWith('/api/v1/menu/public/'))await services().ownerCloud!.verifySession(current.sessionId,true);
+      else services().ownerCloud!.verifyLocalSession(current.sessionId);
+    }
+  });
+  const token=(r:FastifyRequest)=>{const header=r.headers.authorization;requireCondition(typeof header === 'string' && header.startsWith('Bearer '),'SESSION_INVALID',401);const value=header.slice(7);requireCondition(services().auth.current(value,undefined,true).audience!=='WAITER_WEB','CLIENT_AUDIENCE_DENIED',403);return value;};
+  const cashDrafts=()=>new CashDraftService(services().auth,services().cashDraftChanged);
+  app.get('/api/v1/analytics/overview',r=>{
+    const actor=services().auth.current(token(r));requireCondition(actor.role==='OWNER','OWNER_REQUIRED',403);
+    const values=query(r,['from','to']);const valid=(value:unknown)=>{
+      requireCondition(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value),'INVALID_PERIOD');
+      const time=Date.parse(value+'T00:00:00Z');requireCondition(Number.isFinite(time)&&new Date(time).toISOString().slice(0,10)===value,'INVALID_PERIOD');return time;
+    };
+    const from=valid(values.from),last=valid(values.to);
+    requireCondition(last>=from&&last-from<=365*86_400_000,'INVALID_PERIOD');
+    requireCondition(services().analyticsOverview,'ANALYTICS_UNAVAILABLE',503);
+    const offset=6*3_600_000;
+    return {...services().analyticsOverview!(from-offset,last+86_400_000-offset,from===last?'hour':'day'),generatedAt:Date.now(),cloudSync:services().analyticsSyncStatus?.()??{enabled:false,lastSuccessAt:null,lastError:null,pendingFacts:0}};
+  });
+  app.get('/api/v1/analytics/products',r=>{
+    const actor=services().auth.current(token(r));requireCondition(actor.role==='OWNER','OWNER_REQUIRED',403);
+    const values=query(r,['from','to']);const valid=(value:unknown)=>{
+      requireCondition(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value),'INVALID_PERIOD');
+      const time=Date.parse(value+'T00:00:00Z');requireCondition(Number.isFinite(time)&&new Date(time).toISOString().slice(0,10)===value,'INVALID_PERIOD');return time;
+    };
+    const from=valid(values.from),last=valid(values.to);requireCondition(last>=from&&last-from<=365*86_400_000,'INVALID_PERIOD');
+    requireCondition(services().analyticsProducts,'ANALYTICS_UNAVAILABLE',503);
+    const offset=6*3_600_000;
+    return {...services().analyticsProducts!(from-offset,last+86_400_000-offset),generatedAt:Date.now(),cloudSync:services().analyticsSyncStatus?.()??{enabled:false,lastSuccessAt:null,lastError:null,pendingFacts:0}};
+  });
+  app.get('/api/v1/cash/drafts',r=>cashDrafts().list(token(r)));
+  app.get('/api/v1/cash/drafts/:id',r=>cashDrafts().get(token(r),(r.params as {id:string}).id));
+  app.post('/api/v1/cash/drafts/save',r=>cashDrafts().save(token(r),body(r,['id','expectedRevision','commandId','draft']) as never));
+  app.post('/api/v1/cash/drafts/:id/discard',r=>cashDrafts().discard(token(r),(r.params as {id:string}).id,body(r,['expectedRevision']).expectedRevision as number));
+  app.post('/api/v1/cash/drafts/:id/resume',r=>cashDrafts().resume(token(r),(r.params as {id:string}).id,body(r,['expectedRevision']).expectedRevision as number));
+  const body=(r:FastifyRequest,keys:string[],optional:string[]=[])=>{
+    const b=object(r.body,keys);
+    for(const key of keys) requireCondition(Object.hasOwn(b,key) || optional.includes(key),'MISSING_FIELD');
+    for(const [key,value] of Object.entries(b)) {
+      if(['commandId','employeeId','draftId'].includes(key)) requireCondition(key==='draftId' && value===null || typeof value==='string' && uuidPattern.test(value),'INVALID_ID');
+      if(['revision','draftRevision','baseRevision','menuRevision','discount'].includes(key)) requireCondition(typeof value==='number' && Number.isSafeInteger(value) && value>=0,'INVALID_NUMBER');
+      if(['login','name','password','oldPassword','newPassword','role','status','permission','entityId','type'].includes(key)) requireCondition(typeof value==='string' && value.length>0 && Buffer.byteLength(value)<=2048,'INVALID_TEXT');
+      if(['available','allowed'].includes(key))requireCondition(typeof value==='boolean','INVALID_BOOLEAN');
+      if(['permissions','lines','fees'].includes(key))requireCondition(Array.isArray(value),'INVALID_ARRAY');
+    }
+    return b;
+  };
+  registerServiceClientApi(app,services,token);
+  app.post('/api/v1/auth/pin',async r=>{const b=body(r,['pin']);requireCondition(services().pins,'PIN_UNAVAILABLE',503);return services().pins!.login(b.pin,r.ip);});
+  app.post('/api/v1/employees/pin/issue',async r=>{const {commandId,...b}=body(r,['commandId','employeeId','revision']);requireCondition(services().pins,'PIN_UNAVAILABLE',503);return services().pins!.assign(token(r),commandId as string,b as never,false);});
+  app.post('/api/v1/employees/pin/reset',async r=>{const {commandId,...b}=body(r,['commandId','employeeId','revision']);requireCondition(services().pins,'PIN_UNAVAILABLE',503);return services().pins!.assign(token(r),commandId as string,b as never,true);});
+  app.get('/api/v1/employees/pin',async r=>{requireCondition(services().pins,'PIN_UNAVAILABLE',503);return services().pins!.list(token(r));});
+  app.post('/api/v1/employees/pin/reveal',async r=>{const b=body(r,['employeeId']);requireCondition(services().pins,'PIN_UNAVAILABLE',503);return services().pins!.reveal(token(r),b.employeeId as string);});
+  app.post('/api/v1/auth/login',async r=>{const b=body(r,['login','password']);return services().auth.login(b.login,b.password,'POS');});
+  app.post('/api/v1/auth/owner-cloud',async r=>{const b=body(r,['email','password']);requireCondition(services().ownerCloud,'OWNER_CLOUD_UNAVAILABLE',503);return services().ownerCloud!.login(b.email as string,b.password as string);});
+  app.post('/api/v1/auth/logout',async r=>{body(r,[]);const value=token(r),principal=services().auth.current(value,undefined,true);services().auth.logout(value);services().ownerCloud?.forget(principal.sessionId);return {loggedOut:true};});
+  app.post('/api/v1/auth/activity',async r=>{body(r,[]);services().auth.activity(token(r));return {active:true};});
+  app.get('/api/v1/auth/me',async r=>{const s=services(),p=s.auth.current(token(r),undefined,true);return {id:p.id,role:p.role,branchId:p.branchId,branchName:s.branchDisplayName??null,name:p.employee.name,audience:p.audience,hasPin:p.role==='CASHIER'&&!!s.auth.db.prepare('SELECT 1 FROM employee_pins WHERE employee_id=? AND branch_id=?').get(p.id,p.branchId),mustChangePassword:p.method==='PASSWORD'&&p.employee.must_change===1,permissions:permissionKeys.filter(key=>hasPermission(s.auth.db,p.employee,key))};});
+  app.post('/api/v1/auth/password',async r=>{const b=body(r,['commandId','oldPassword','newPassword']);return services().auth.changePassword(token(r),b.commandId as string,b.oldPassword,b.newPassword);});
+  app.get('/api/v1/employees',async r=>{const q=object({...r.query as Record<string,unknown>},['archive']);requireCondition(q.archive===undefined || q.archive==='true' || q.archive==='false','INVALID_QUERY');return services().auth.list(token(r),q.archive==='true');});
+  app.get('/api/v1/employees/:id/statistics',async r=>services().auth.statistics(token(r),(r.params as {id:string}).id));
+  app.post('/api/v1/employees',async r=>{const b=body(r,['commandId','login','name','role','phone'],['phone']);return b.role==='CASHIER'||b.role==='WAITER'?services().pins!.createEmployee(token(r),b.commandId as string,{login:b.login,name:b.name,role:b.role,phone:b.phone as string|undefined}):services().auth.createEmployee(token(r),b.commandId as string,{login:b.login,name:b.name,role:b.role as never,phone:b.phone as string|undefined});});
+  app.post('/api/v1/employees/update',async r=>{const {commandId,...b}=body(r,['commandId','employeeId','revision','name','phone','role','status'],['name','phone','role','status']);return services().auth.updateEmployee(token(r),commandId as string,b as never);});
+  app.post('/api/v1/employees/reset-password',async r=>{const {commandId,...b}=body(r,['commandId','employeeId','revision']);return services().auth.resetPassword(token(r),commandId as string,b as never);});
+  app.post('/api/v1/employees/permission',async r=>{token(r);requireCondition(false,'PERMISSION_EDITING_CLOSED',423);});
+  app.post('/api/v1/employees/delegation',async r=>{token(r);requireCondition(false,'PERMISSION_EDITING_CLOSED',423);});
+  app.get('/api/v1/roles/permissions',async r=>services().auth.roleMatrix(token(r)));
+  app.post('/api/v1/roles/permissions',async r=>{token(r);requireCondition(false,'ROLE_MATRIX_CLOSED',423);});
+  app.get('/api/v1/shifts/current',async r=>services().shifts.current(token(r)));
+  app.post('/api/v1/shifts/open',async r=>{const b=body(r,['commandId','login','password','pin'],['login','password','pin']);requireCondition((b.pin!==undefined)===(b.login===undefined&&b.password===undefined),'INVALID_SHIFT_PROOF');const proof=b.pin===undefined?undefined:await services().pins!.proveForShift(token(r),b.pin,r.ip);return services().shifts.open(token(r),b.commandId as string,b.login,b.password,proof);});
+  const financial=()=>new ShiftFinanceService(services().finance);
+  app.post('/api/v1/shifts/close',async r=>{const {commandId,login,password,pin,...b}=body(r,['commandId','shiftId','expectedShiftRevision','confirmationHash','login','password','pin'],['login','password','pin']);requireCondition((pin!==undefined)===(login===undefined&&password===undefined),'INVALID_SHIFT_PROOF');const proof=pin===undefined?undefined:await services().pins!.proveForShift(token(r),pin,r.ip);return financial().close(token(r),commandId as string,b as never,login,password,proof);});
+  app.get('/api/v1/tables',async r=>services().tables.list(token(r)));
+  app.get('/api/v1/tables/public-links',async r=>services().tableCloudSync?services().tableCloudSync!.links(token(r)):services().tables.publicLinks(token(r)));
+  app.get('/api/v1/tables/public-links/refresh',async r=>{requireCondition(services().tableCloudSync,'TABLE_CLOUD_SYNC_DISABLED',503);return services().tableCloudSync!.linksFresh(token(r));});
+  app.post('/api/v1/tables/public-qr',async r=>{const b=body(r,['tableId']);requireCondition(services().tableCloudSync,'TABLE_CLOUD_SYNC_DISABLED',503);return services().tableCloudSync!.qr(token(r),b.tableId as string);});
+  app.post('/api/v1/tables/public-qr/batch',async r=>{const b=body(r,['tableIds']);requireCondition(services().tableCloudSync,'TABLE_CLOUD_SYNC_DISABLED',503);return services().tableCloudSync!.qrBatch(token(r),b.tableIds);});
+  app.get('/api/v1/tables/cloud-sync/status',async r=>{requireCondition(services().tableCloudSync,'TABLE_CLOUD_SYNC_DISABLED',503);return services().tableCloudSync!.status(token(r));});
+  app.get('/api/v1/tables/floor-plan',async r=>services().tables.floorPlan(token(r)));
+  app.post('/api/v1/tables/floor-plan/save',async r=>{const {commandId,...b}=body(r,['commandId','revision','plan']);return services().tables.saveFloorPlan(token(r),commandId as string,b as never);});
+  app.get('/api/v1/tables/waiters',async r=>services().tables.waiters(token(r)));
+  app.get('/api/v1/tables/waiters/shift-summary',async r=>services().tables.waiterShiftSummary(token(r)));
+  app.get('/api/v1/tables/visits/:id',async r=>services().tables.details(token(r),(r.params as {id:string}).id));
+  app.post('/api/v1/tables/zones/save',async r=>{const {commandId,...b}=body(r,['commandId','zoneId','revision','name','active']);return services().tables.saveZone(token(r),commandId as string,b as never);});
+  app.post('/api/v1/tables/save',async r=>{const {commandId,...b}=body(r,['commandId','tableId','zoneId','revision','name','active']);return services().tables.saveTable(token(r),commandId as string,b as never);});
+  app.post('/api/v1/tables/settings',async r=>{token(r);requireCondition(false,'TABLE_MODE_CLOSED',423);});
+  app.post('/api/v1/tables/open',async r=>{const {commandId,...b}=body(r,['commandId','tableId','responsibleWaiterId']);return services().tables.open(token(r),commandId as string,b as never);});
+  app.post('/api/v1/tables/assign',async r=>{const {commandId,...b}=body(r,['commandId','sessionId','tableId','revision']);return services().tables.assign(token(r),commandId as string,b as never);});
+  app.post('/api/v1/tables/move',async r=>{const {commandId,...b}=body(r,['commandId','sessionId','tableId','revision']);return services().tables.move(token(r),commandId as string,b as never);});
+  app.post('/api/v1/tables/responsible',async r=>{const {commandId,...b}=body(r,['commandId','sessionId','responsibleWaiterId','revision']);return services().tables.responsible(token(r),commandId as string,b as never);});
+  app.post('/api/v1/tables/close-empty',async r=>{const {commandId,...b}=body(r,['commandId','sessionId','revision']);return services().tables.closeEmpty(token(r),commandId as string,b as never);});
+  app.get('/api/v1/tables/visits/:id/draft-context',async r=>services().orders.context(token(r),(r.params as {id:string}).id));
+  app.get('/api/v1/tables/visits/:id/order',async r=>services().orders.get(token(r),(r.params as {id:string}).id));
+  app.get('/api/v1/tables/visits/:id/batches',async r=>{const q=object({...r.query as object},['after','limit']);for(const v of Object.values(q))requireCondition(typeof v==='string'&&/^\d+$/.test(v),'INVALID_QUERY');return services().orders.history(token(r),(r.params as {id:string}).id,q.after===undefined?0:Number(q.after),q.limit===undefined?20:Number(q.limit));});
+  app.get('/api/v1/tables/visits/:id/kitchen-jobs',async r=>services().orders.jobs(token(r),(r.params as {id:string}).id));
+  app.post('/api/v1/tables/visits/:id/batches/prepare',async r=>services().orders.prepare(token(r),(r.params as {id:string}).id,body(r,['draftId','draftRevision','menuRevision','lines','discount']) as never));
+  app.post('/api/v1/tables/visits/:id/batches/submit',async r=>{const {commandId,...b}=body(r,['commandId','draftId','draftRevision','menuRevision','lines','discount','orderRevision','confirmationHash']);return services().orders.submit(token(r),commandId as string,(r.params as {id:string}).id,b as never);});
+  app.post('/api/v1/orders/:id/discount',async r=>{const {commandId,...b}=body(r,['commandId','expectedRevision','amount']);return services().orders.discount(token(r),commandId as string,(r.params as {id:string}).id,b as never);});
+  const param=(r:FastifyRequest)=>(r.params as {id:string}).id;
+  const confirmation=['expectedOrderRevision','expectedVisitRevision','shiftId','confirmationHash'];
+  const query=(r:FastifyRequest,keys:string[])=>object({...r.query as object},keys);
+  const number=(v:unknown,fallback:number)=>{if(v===undefined)return fallback;requireCondition(typeof v==='string'&&/^\d+$/.test(v),'INVALID_QUERY');const n=Number(v);requireCondition(Number.isSafeInteger(n),'INVALID_QUERY');return n;};
+  app.get('/api/v1/orders/:id',async r=>services().finance.get(token(r),param(r)));
+  app.get('/api/v1/orders/:id/batches',async r=>{const q=query(r,['after','limit']);return new FulfillmentService(services().finance).history(token(r),param(r),number(q.after,0),number(q.limit,20));});
+  app.get('/api/v1/orders/:id/history-state',async r=>new FulfillmentService(services().finance).state(token(r),param(r)));
+  app.get('/api/v1/orders/:id/fulfillment/events',async r=>{const q=query(r,['after','limit']);return new FulfillmentService(services().finance).events(token(r),param(r),number(q.after,0),number(q.limit,50));});
+  app.post('/api/v1/orders/:id/fulfillment',async r=>{const {commandId,...b}=body(r,['commandId','itemId','issued','issuedQuantity','expectedRevision','expectedOrderRevision'],['issued','issuedQuantity']);return new FulfillmentService(services().finance).mark(token(r),param(r),b as never,commandId as string);});
+  app.get('/api/v1/orders/active',async r=>services().finance.activeOrders(token(r)));
+  app.get('/api/v1/orders/:id/events',async r=>{const q=query(r,['after','limit']);return services().finance.events(token(r),param(r),number(q.after,0),number(q.limit,20));});
+  app.post('/api/v1/orders/:id/settlements/prepare',async r=>services().finance.prepareSettlement(token(r),param(r),body(r,['payment']) as never));
+  app.post('/api/v1/orders/:id/settlements/commit',async r=>{const {commandId,...b}=body(r,['commandId','payment',...confirmation]);return services().finance.settle(token(r),param(r),b as never,commandId as string);});
+  for(const path of ['corrections','cancel']){
+   const keys=path==='cancel'?['reason']:['action','targets','reason','comment','replacement','kitchenPrint'];
+   const optional=path==='cancel'?[]:['targets','reason','comment','replacement','kitchenPrint'];
+   app.post('/api/v1/orders/:id/'+path+'/prepare',async r=>{const b=body(r,keys,optional);return services().finance.prepareCorrection(token(r),param(r),{...b,...(path==='cancel'?{action:'CANCEL_ORDER'}:{})} as never);});
+   app.post('/api/v1/orders/:id/'+path+'/commit',async r=>{const {commandId,...b}=body(r,['commandId',...keys,...confirmation],optional);return services().finance.correct(token(r),param(r),{...b,...(path==='cancel'?{action:'CANCEL_ORDER'}:{})} as never,commandId as string);});
+  }
+  const checkoutKeys=['orderId','type','sessionId','opening','draft','payment'];
+  app.post('/api/v1/cash/checkout/prepare',async r=>new CheckoutService(services().finance).prepare(token(r),body(r,checkoutKeys) as never));
+  app.post('/api/v1/cash/checkout/commit',async r=>{const {commandId,...b}=body(r,['commandId',...checkoutKeys,...confirmation]);return new CheckoutService(services().finance).commit(token(r),b as never,commandId as string);});
+  const counterKeys=['draftId','draftRevision','menuRevision','lines','discount','guestLabel','mode','payment'];
+  app.post('/api/v1/cash/draft-context',async r=>{const b=body(r,['draftId','type']);return services().finance.cashContext(token(r),b.draftId as string,b.type as string);});
+  app.post('/api/v1/counter/draft-context',async r=>{const b=body(r,['draftId']);return services().finance.counterContext(token(r),b.draftId as string);});
+  app.get('/api/v1/counter/orders',async r=>{const q=query(r,['after','limit','state']);requireCondition(q.state===undefined||q.state==='ACTIVE','INVALID_QUERY');return services().finance.counterList(token(r),number(q.after,0),number(q.limit,20));});
+  app.get('/api/v1/counter/worklist',async r=>{const q=query(r,['after','limit','all']);requireCondition(q.all===undefined||q.all==='true'||q.all==='false','INVALID_QUERY');return services().finance.worklist(token(r),number(q.after,0),number(q.limit,20),q.all==='true');});
+  for(const first of [true,false]){
+   const path=first?'/api/v1/counter/orders':'/api/v1/counter/orders/:id/batches';
+   app.post(path+'/prepare',async r=>services().finance.prepareCounter(token(r),first?null:param(r),body(r,counterKeys,['guestLabel','payment']) as never));
+   app.post(path+(first?'/commit':'/submit'),async r=>{const {commandId,...b}=body(r,['commandId',...counterKeys,...confirmation],['guestLabel','payment']);return services().finance.counterCommit(token(r),first?null:param(r),b as never,commandId as string);});
+  }
+  app.post('/api/v1/counter/orders/:id/hide',async r=>{const {commandId,...b}=body(r,['commandId','expectedVisibilityRevision']);return services().finance.hide(token(r),param(r),b as never,commandId as string);});
+  app.get('/api/v1/sales',async r=>{const q=query(r,['afterTime','afterId','type','method','query','limit','fromTime','history']);return services().finance.sales(token(r),{...q,afterTime:q.afterTime===undefined?undefined:number(q.afterTime,0),fromTime:q.fromTime===undefined?undefined:number(q.fromTime,0),history:q.history===undefined?undefined:q.history==='true',limit:number(q.limit,20)} as never);});
+  app.get('/api/v1/sales/:id',async r=>{const q=query(r,['history']);return services().finance.sale(token(r),param(r),q.history==='true');});
+  app.post('/api/v1/payment-incidents',async r=>{const {commandId,...b}=body(r,['commandId','orderId','draftId','sourceCommandId','receipts','reason']);return services().finance.incident(token(r),b as never,commandId as string);});
+  app.get('/api/v1/payment-incidents',async r=>{const q=query(r,['state','after','limit']);return financial().incidents(token(r),q.state as string|undefined,number(q.after,0),number(q.limit,20));});
+  app.get('/api/v1/payment-incidents/:id',async r=>financial().incident(token(r),param(r)));
+  const resolutionKeys=['outcome','settlementId','reason','evidenceNote','externalReturns'];
+  app.post('/api/v1/payment-incidents/:id/resolutions/prepare',async r=>financial().prepareResolution(token(r),param(r),body(r,resolutionKeys) as never));
+  app.post('/api/v1/payment-incidents/:id/resolutions/commit',async r=>{const {commandId,...b}=body(r,['commandId',...resolutionKeys,'currentShiftId','confirmationHash']);return financial().resolve(token(r),param(r),b as never,commandId as string);});
+  app.post('/api/v1/financial-cases',async r=>{const {commandId,...b}=body(r,['commandId','kind','originalShiftId','orderId','paymentId','sourceCommandId','reason','knownAmount']);return financial().recordCase(token(r),b,commandId as string);});
+  app.get('/api/v1/financial-cases',async r=>{const q=query(r,['after','limit']);return financial().cases(token(r),number(q.after,0),number(q.limit,20));});
+  app.get('/api/v1/payments/:id/refund-context',async r=>financial().refundContext(token(r),param(r)));
+  app.post('/api/v1/refunds/history-lookup',async r=>financial().lookup(token(r),body(r,['paymentId','settlementId','orderId','counterNumber','originalShiftId'],['paymentId','settlementId','orderId','counterNumber','originalShiftId']) as never));
+  app.post('/api/v1/payments/:id/refunds/prepare',async r=>financial().prepareRefund(token(r),param(r),body(r,['reason']) as never));
+  app.post('/api/v1/payments/:id/refunds/commit',async r=>{const {commandId,...b}=body(r,['commandId','reason','currentShiftId','confirmedExternalReturn','confirmationHash']);return financial().refund(token(r),param(r),b as never,commandId as string);});
+  app.post('/api/v1/sales/:id/refunds/prepare',async r=>financial().prepareOrderRefund(token(r),param(r),body(r,['reason']) as never));
+  app.post('/api/v1/sales/:id/refunds/commit',async r=>{const {commandId,...b}=body(r,['commandId','reason','currentShiftId','confirmedExternalReturn','confirmationHash']);return financial().refundOrder(token(r),param(r),b as never,commandId as string);});
+  app.get('/api/v1/shifts/:id/close-context',async r=>financial().context(token(r),param(r)));
+  app.post('/api/v1/shifts/:id/close/prepare',async r=>financial().prepareClose(token(r),param(r),body(r,['expectedShiftRevision']) as never));
+  app.get('/api/v1/shifts/:id/report',async r=>financial().report(token(r),param(r)));
+  app.get('/api/v1/shift-reports/cloud-status',async r=>{const actor=services().auth.current(token(r));requireCondition(actor.role==='OWNER','OWNER_REQUIRED',403);return services().shiftCloudStatus?.()??{enabled:false,pendingReports:0,pendingSales:0,pendingRefunds:0,pendingStaff:0,nextAttemptAt:null,lastError:null};});
+  app.get('/api/v1/shift-reports',async r=>{const q=query(r,['after','limit']);return financial().reports(token(r),number(q.after,0),number(q.limit,20));});
+  const menuSync=()=>{requireCondition(services().menuSync,'CLOUD_SYNC_DISABLED',503);return services().menuSync!;};
+  app.get('/api/v1/menu/sync/status',async r=>menuSync().status(token(r)));
+  app.get('/api/v1/menu/public/status',async r=>menuSync().publicStatus(token(r)));
+  app.get('/api/v1/menu/public/design',async r=>menuSync().publicDesignStatus(token(r)));
+  app.post('/api/v1/menu/public/design',async r=>{const b=body(r,['expectedRevision','theme','defaultLanguage','languages','copy','template','wifi','categoryTitles','hiddenCategoryIds'],['template','wifi','categoryTitles','hiddenCategoryIds']);return menuSync().publicDesignSet(token(r),b);});
+  app.post('/api/v1/menu/public/set',async r=>{const b=body(r,['enabled']);return menuSync().setPublicEnabled(token(r),b.enabled as boolean);});
+  app.post('/api/v1/menu/sync/retry',async r=>{body(r,[]);return menuSync().retry(token(r));});
+  app.post('/api/v1/menu/sync/lease',async r=>{const b=body(r,['active','draftId'],['draftId']);return menuSync().lease(token(r),b.active as boolean,b.draftId as string|undefined);});
+  app.get('/api/v1/menu/sync/history',async r=>{const q=query(r,['before']);return menuSync().history(token(r),number(q.before,0));});
+  app.get('/api/v1/menu/sync/versions/:id',async r=>menuSync().preview(token(r),(r.params as {id:string}).id));
+  app.post('/api/v1/menu/sync/apply',async r=>{const {commandId,...b}=body(r,['commandId','expectedLocalRevision','versionId','preserveDrafts']);return menuSync().apply(token(r),commandId as string,b as never);});
+  app.post('/api/v1/menu/sync/resolve',async r=>{const {commandId,...b}=body(r,['commandId','expectedLocalRevision','expectedRemoteVersion','choice','versionId'],['versionId']);return menuSync().choose(token(r),commandId as string,b as never);});
+  app.post('/api/v1/menu/sync/finish-draft',async r=>{const b=body(r,['commandId','draftId']);return menuSync().abandon(token(r),b.commandId as string,b.draftId as string);});
+  app.get('/api/v1/menu',async r=>{const s=services();return {...s.menu.active(token(r)),availability:s.menu.availability()};});
+  app.get('/api/v1/menu/sales-layout',r=>services().menu.salesCatalogLayout(token(r)));
+  app.post('/api/v1/menu/sales-layout/pin',r=>{const {commandId,...input}=body(r,['commandId','categoryId','itemId','pinned','expectedRevision']);return services().menu.setSalesCatalogPin(token(r),commandId as string,input as never);});
+  app.post('/api/v1/menu/photo/grant',async r=>{const b=body(r,['itemId','expectedRevision','operation']);requireCondition(services().menuPhotoGrant,'PHOTO_CLOUD_UNAVAILABLE',503);requireCondition(b.operation==='READ'||b.operation==='UPLOAD'||b.operation==='REMOVE','INVALID_OPERATION');return services().menuPhotoGrant!(token(r),b.itemId as string,b.expectedRevision as number,b.operation);});
+  app.get('/api/v1/menu/drafts',async r=>services().menu.drafts(token(r)));
+  app.get('/api/v1/menu/revisions',async r=>{const q=query(r,['before','limit']);return services().menu.revisions(token(r),number(q.before,0),number(q.limit,20));});
+  app.get('/api/v1/menu/revisions/:id',async r=>services().menu.revision(token(r),number((r.params as {id:string}).id,0)));
+  app.get('/api/v1/menu/fees',async r=>services().menu.fees(token(r)));
+  app.get('/api/v1/menu/drafts/:id',async r=>services().menu.draft(token(r),(r.params as {id:string}).id));
+  app.post('/api/v1/menu/drafts',async r=>{const {commandId,...b}=body(r,['commandId','draftId','draftRevision','baseRevision','catalog']);return services().menu.saveDraft(token(r),commandId as string,b as never);});
+  app.post('/api/v1/menu/publish',async r=>{const {commandId,...b}=body(r,['commandId','draftId','draftRevision']);return services().menu.publish(token(r),commandId as string,b as never);});
+  app.post('/api/v1/menu/availability',async r=>{const {commandId,...b}=body(r,['commandId','entityId','available','revision']);return services().menu.stoplist(token(r),commandId as string,b as never);});
+  app.post('/api/v1/menu/availability/category',async r=>{const {commandId,...b}=body(r,['commandId','categoryId','available','menuRevision','expected']);return services().menu.stoplistCategory(token(r),commandId as string,b as never);});
+  app.post('/api/v1/menu/fees',async r=>{const {commandId,...b}=body(r,['commandId','revision','fees']);return services().menu.configureFees(token(r),commandId as string,b as never);});
+  app.post('/api/v1/menu/quote',async r=>{const b=body(r,['menuRevision','type','lines','discount']);return services().menu.quote(token(r),b as never);});
+  app.setNotFoundHandler((_request,reply)=>reply.code(404).send({error:{code:'NOT_FOUND'}}));
+  app.setErrorHandler((error,_request,reply)=>{
+    const typed=error as {code?:string;statusCode?:number};
+    if(error instanceof PinThrottle){reply.header('Retry-After',error.retryAfterSeconds).code(429).send({error:{code:error.code,retryAfterSeconds:error.retryAfterSeconds}});return;}
+    if(error instanceof PosError){reply.code(error.status).send({error:{code:error.code}});return;}
+    if(typed.code && /^SQLITE_(FULL|IOERR|CORRUPT|NOTADB|READONLY)/.test(typed.code)){onStorageFailure('STORAGE_WRITE_FAILED');reply.code(503).send({error:{code:'STORAGE_WRITE_FAILED'}});return;}
+    const code=typed.code?.startsWith('SQLITE_BUSY')?'STORAGE_BUSY':typed.statusCode===413?'REQUEST_TOO_LARGE':typed.statusCode===400?'INVALID_REQUEST':'INTERNAL_ERROR';
+    reply.code(code==='STORAGE_BUSY'?503:typed.statusCode===413?413:typed.statusCode===400?400:500).send({error:{code}});
+  });
+}

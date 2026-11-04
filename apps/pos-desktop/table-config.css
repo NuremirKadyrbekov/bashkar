@@ -1,0 +1,53 @@
+.pos-workspace #screen>section.table-config{width:100%;max-width:none;margin:0}
+.table-config{height:100%;min-height:0;display:flex;flex-direction:column;gap:18px;padding:22px 26px!important;background:#f6fbfa}
+.table-config-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;height:auto;min-height:0;padding:0;border:0;background:transparent}
+.table-config-heading>div:first-child{display:block}
+.table-config-heading h1{margin:0 0 6px;color:#102f3b;font-size:32px;line-height:1.1}
+.table-config-heading p{margin:0;color:#587487;font-size:14px}
+.table-config-views{display:flex;flex-shrink:0;gap:4px;padding:5px;border:1px solid #e2efee;border-radius:12px;background:#eaf7f5}
+.table-config-views button{min-height:42px;margin:0;padding:8px 17px;border:0;border-radius:9px;background:transparent;color:#315763;font-weight:700}
+.table-config-views button.selected{background:#063e46;color:#fff}
+.table-config-views button:disabled{opacity:.48;cursor:help}
+.table-config-body{display:grid;grid-template-columns:minmax(250px,28%) minmax(0,1fr);gap:14px;flex:1;min-height:0}
+.table-config-zones,.table-config-tables{min-height:0;overflow:auto;padding:16px;border:1px solid #e1efed;border-radius:14px;background:#fff;box-shadow:0 4px 20px #153e3609}
+.table-config-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.table-config-panel-head h2{margin:0;color:#102f3b;font-size:20px}
+.table-config-panel-head .primary,.table-config-dialog-actions .primary{min-height:45px;margin:0;padding:8px 15px;border:0;border-radius:10px;background:#009d98;color:#fff;font-weight:750}
+.table-config-zone{display:flex;align-items:center;gap:4px;margin-bottom:6px;border:1px solid #e6f0ef;border-radius:11px;background:#fff}
+.table-config-zone.selected{border-color:#bcebe7;background:#ddf6f4}
+.table-config-zone.inactive,.table-config-card.inactive{opacity:.65}
+.table-config-zone-pick{display:flex;align-items:center;gap:13px;flex:1;min-width:0;min-height:74px;margin:0;padding:10px 12px;border:0;background:transparent;text-align:left}
+.table-config-zone-pick>span:last-child{display:flex;flex-direction:column;gap:4px;min-width:0}
+.table-config-zone-pick strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#102f3b;font-size:15px}
+.table-config-zone-pick small{color:#587487;font-size:12px}
+.table-config-dot{flex:0 0 14px;width:14px;height:14px;border-radius:50%;background:#009f9b}
+.table-config-zone:nth-of-type(4n+2) .table-config-dot{background:#1689df}.table-config-zone:nth-of-type(4n+3) .table-config-dot{background:#9c63dc}.table-config-zone:nth-of-type(4n+4) .table-config-dot{background:#31ad69}
+.table-config-more,.table-config-card-more{min-width:38px;min-height:38px;margin:0 7px 0 0;padding:0;border:0;border-radius:8px;background:#f0f7f7;color:#315965;font-size:22px;line-height:1}
+.table-config-inactive-toggle{min-height:40px;margin:9px 0 0;padding:7px 10px;border:0;background:transparent;color:#23756f;text-align:left;font-size:13px}
+.table-config-toolbar{display:flex;justify-content:flex-end;margin:0 0 14px}
+.table-config-toolbar input{width:min(280px,100%);min-height:42px;margin:0;padding:9px 12px;border:1px solid #d6e7e5;border-radius:10px;background:#fff;color:#143745}
+.table-config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;align-content:start}
+.table-config-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;padding:42px 10px 11px;border:1px solid #e1eeec;border-radius:12px;background:#fbfefd;color:#102f3b;text-align:center}
+.table-config-card-qr{display:grid;place-items:center;width:108px;height:108px;margin:0 0 7px;border:1px solid #e1eeec;border-radius:9px;background:#fff}
+.table-config-card-qr img{display:block;width:106px;height:106px;object-fit:contain}
+.table-config-card-qr span{padding:7px;color:#5a7c8b;font-size:11px;line-height:1.35}
+.table-config-download{display:inline-flex;align-items:center;justify-content:center;min-height:25px;margin-top:7px;color:#087b76;font-size:12px;font-weight:700;text-decoration:none}
+.table-config-download:hover{text-decoration:underline}
+.table-config-card strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:17px}
+.table-config-card small{margin-top:4px;color:#5a7c8b;font-size:12px}
+.table-config-card-more{position:absolute;top:8px;right:2px}
+.table-config-empty{grid-column:1/-1;margin:10px 0;padding:18px;border:1px dashed #d6e8e5;border-radius:10px;color:#65838a}
+.table-config-dialog{width:min(460px,calc(100vw - 30px));border:1px solid #dceae8;border-radius:15px;padding:22px;background:#fff;color:#183c47}
+.table-config-dialog h2{margin:0 0 18px;font-size:23px}
+.table-config-dialog form{display:flex;flex-direction:column;gap:13px}
+.table-config-dialog label{display:flex;flex-direction:column;gap:7px;font-weight:700}
+.table-config-dialog input,.table-config-dialog select{min-height:44px;padding:8px 11px;border:1px solid #cde1dd;border-radius:9px;background:#fff;color:#143745}
+.table-config-dialog-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:8px}
+.table-config-dialog-actions button{min-height:43px;margin:0;padding:8px 11px;border:1px solid #d9e7e4;border-radius:9px;background:#f8fbfa;color:#24515a}
+.table-config-dialog-actions .table-config-toggle{margin-right:auto;color:#ac4c33}
+.table-public-qr{display:flex;flex-direction:column;align-items:center;gap:9px;padding:12px;border:1px solid #dceae8;border-radius:12px;background:#f8fbfa}
+.table-public-qr img{width:176px;height:176px;image-rendering:pixelated}
+.table-public-qr-actions{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.table-public-qr-actions a{color:#087b76;font-weight:700}
+.table-config button:focus-visible,.table-config-dialog button:focus-visible,.table-config-dialog input:focus-visible,.table-config-dialog select:focus-visible{outline:3px solid #038f8e;outline-offset:2px}
+@media(max-width:850px){.table-config{height:auto;padding:16px!important}.table-config-heading{flex-wrap:wrap}.table-config-body{grid-template-columns:1fr}.table-config-zones,.table-config-tables{overflow:visible}}

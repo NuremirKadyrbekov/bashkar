@@ -1,0 +1,31 @@
+> **Сверка 24.10.2026.** Номера source/schema и результаты тестов ниже привязаны к своей поставке. Текущий срез — source 0.11.0-menu-sync / SQLite 12; изменения и ограничения — в DOCS-AUDIT-001. [Актуальное состояние и решения](DOCS-AUDIT-001.md).
+
+# AUTH-002 A — локальный PIN и Cashier POS
+
+22.10.2026. Инженерная конкретизация утверждённых R-01…R-09. Существующие установки не обновляются. AUTH-002 имеет приоритет над прежним запретом PIN в AUTH-001/BACKEND D02/D15. Cloud, Waiter transport и финансы остаются B–F.
+
+## Секреты и атомарность
+
+PIN — строка ASCII из 4 цифр; генерация randomInt(10000), начальные нули сохраняются. Проверка Argon2id существующего профиля (64 MiB, passes 3, lanes 4, salt 16 bytes, tag 32). Поиск HMAC-SHA256 отдельным случайным ключом 256 bit с domain/branch. Повторный показ AES-256-GCM с другим случайным ключом 256 bit, nonce 12 bytes, tag 16; AAD включает domain, branch, employee, version. Никаких PIN/lookup/hash/ciphertext в business commands, audit/outbox или cloud projections.
+
+Системный provider хранит 64 случайных байта только в Keychain (отдельный service kg.bashkar.local-server.pin) либо LocalService CurrentUser DPAPI (отдельный pin-keys.dpapi). На диске marker с fingerprint; в SQLite binding fingerprint. Signing key активации не используется. Ключи создаются лениво при первой явной выдаче, вне writer. Отсутствующий ключ при существующем marker/binding — PIN_KEYS_UNAVAILABLE; без замены и без блокировки независимого парольного входа. Параметры/ACL/DPAPI на Windows требуют отдельной приёмки. Автоматической ротации нет: изменение binding запрещено, при компрометации нужны контролируемая замена и перевыдача всех PIN отдельной процедурой; это не реализованный backup/restore.
+
+Миграция 006 добавляет PIN credential, binding, persistent rate limits и audience/method сессий. Старые employee/actor IDs, пароли, права и история сохраняются; старые сессии отзываются, PIN автоматически не выдаётся. Startup старой схемы не мигрирует; OPEN запрещает явный upgrade.
+
+Выдача/reset требуют отдельных employee.pin.issue/reset и разрешённой административной цели; default Owner, Manager только явным grant. PIN только CASHIER/WAITER; Manager не получает PIN без отдельного будущего правила. Роль/статус/revision проверяются повторно внутри writer. Подготовка hash/ciphertext вне writer; UNIQUE(branch, lookup) и CAS обеспечивают гонки. Исчерпание пространства — отказ. Заблокированный сохраняет резерв; архив удаляет credential, история остаётся; смена роли удаляет credential. PIN reset увеличивает credential_version и отзывает все локальные сессии, не меняя смену/заказы. Создание/reset возвращает секрет только первому ответу вне journal; replay — secretAlreadyIssued. При потере ответа нужен явный новый reset. Личный пароль cashier остаётся независимым fallback; PIN-сессия не требует смены временного пароля (Waiter может работать только PIN), парольная сессия до смены ограничена как прежде.
+
+## Audience и пределы попыток
+
+POS password допускает CASHIER/MANAGER; локальный OWNER имеет явный переходный LOCAL_ADMIN audience согласно R-07. WAITER пароль не открывает POS. PIN POS только CASHIER; WAITER_WEB PIN только WAITER; HTTPS-транспорт реализован в API-WAITER-009. Native API не принимает WAITER_WEB сессии. Audience и текущая роль проверяются при каждом запросе. Сессии POS idle 3h / Waiter 6h, absolute 12h; polling не activity. Повторный пароль смены сохраняется.
+
+Источник — проверенный remoteAddress Fastify без trustProxy; forwarded headers игнорируются. На native loopback все окна одного хоста имеют общий source. За минуту допускаются 5 начал попыток на источник; далее 60s, повторные превышения до 15min. Per-code bucket использует только HMAC, после 5 попыток/мин — 60s; максимум 10000 кодовых buckets на branch плюс ограниченный native source. Блокировка источника не затрагивает парольный fallback. Резервирование попытки синхронно ДО hash, включая конкурентные запросы; restart/cookie не сбрасывает SQLite limiter. Максимум 2 PIN verification jobs, без ожидания; общий Argon2 worker ceiling 4. Busy/rate limit не продлевает паузу при каждом запросе; нет бесконечной глобальной блокировки. Успешный вход не обнуляет source budget. Ошибки роли/статуса/несуществующего кода одинаковы, dummy hash выполняется для промаха. Ответ 429 содержит retryAfterSeconds; открытый PIN в ошибках отсутствует. Нативный source общий, поэтому пароль остаётся путём работы при атаке на loopback; это не решение DoS для будущей LAN.
+
+## Разрешённый показ
+
+**Уточнение 28.10.2026 для экрана «Сотрудники»:** `employee.pin.view` по умолчанию есть у Owner и Cashier, у Manager только после отдельного grant. Owner и Manager с этим правом могут раскрыть PIN активных CASHIER/WAITER своего филиала; Cashier сохраняет прежний scope — свой ACTIVE PIN и ACTIVE WAITER своего филиала. Owner/Manager не раскрывают PIN Manager/Owner. List возвращает только безопасные id/name/role/branch, маска на UI. Прямой ID повторно проверяет scope. Отдельный POST reveal без commandId/CommandBus, no-store; расшифровка и обязательный audit атомарны до ответа. Отказ тоже аудируется без секрета. Ошибка аудита — кода в ответе нет. В карточке сотрудника PIN скрыт точками и после нажатия виден **3 секунды**; прежняя отдельная карточка кассира использует 20 секунд. Ручное скрытие, очистка при выборе другого сотрудника, навигации/logout/истечении/потере доступа. Никакого сохранения/clipboard. Проверка сессии во время показа не продлевает idle. Это уточнение заменяет прежний запрет Owner/Manager на reveal в этой редакции.
+
+## Проверка
+
+Обязательны гонки issue/reset, duplicate/leading zero, архив/резерв, scope по прямому ID, аудит rollback, ciphertext swapping/утрата ключа, persistent limiter/concurrency, revoke/expiry/audience, migration identity/OPEN guard и настоящий Electron на одноразовой БД. Результаты фиксируются в PROGRESS; Windows/телефоны/cloud/принтер не подменяются macOS.
+
+Фактические уточнения: PIN version берётся из следующей credential_version, поэтому после смены роли/архива не переиспользуется старый AAD. Ключи кешируются только в памяти серверного процесса; после ошибки загрузки нужен перезапуск после ремонта. Это ограничивает OS-вызовы на публичном pre-auth пути. Наличие ключа в памяти не гарантирует моментальную остановку PIN при внешнем удалении Keychain-записи.

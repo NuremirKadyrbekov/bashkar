@@ -1,0 +1,18 @@
+.menu-workspace .menu-body.is-overview>.menu-products.menu-import-panel{padding:24px;overflow:auto}
+.menu-import-panel>h2{margin:0 0 8px;font-size:24px;color:#173c37}
+.menu-import-panel>p.muted{margin:0 0 20px;line-height:1.5}
+.menu-import-card{border:1px solid #dbe9e4;border-radius:14px;background:#fff;padding:18px;margin:0 0 16px;box-shadow:0 5px 18px #173d3708}
+.menu-import-card h3{font-size:17px;margin:0 0 10px}
+.menu-import-card h4{margin:16px 0 8px;color:#9c332c}
+.menu-import-card p{font-size:13px;line-height:1.55}
+.menu-import-scroll{overflow-x:auto;border:1px solid #dbe9e4;border-radius:10px}
+.menu-import-table{border-collapse:collapse;min-width:760px;width:100%;font-size:12px}
+.menu-import-table th,.menu-import-table td{padding:10px 11px;text-align:left;border-bottom:1px solid #e7eeeb;white-space:nowrap}
+.menu-import-table th{background:#153e36;color:#fff;font-weight:700}
+.menu-import-table tr:last-child td{border-bottom:0}
+.menu-import-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 20px}
+.menu-import-actions button,.menu-import-card>.primary{min-height:42px}
+.menu-import-errors{max-height:250px;overflow:auto;padding-left:25px;color:#9c332c;font-size:13px;line-height:1.55}
+.menu-import-preview{display:grid;gap:6px;margin:12px 0 18px}
+.menu-import-preview>div{padding:9px 12px;background:#f3f8f6;border-radius:8px;font-size:13px}
+@media(max-width:760px){.menu-workspace .menu-body.is-overview>.menu-products.menu-import-panel{padding:14px}.menu-import-card{padding:13px}}

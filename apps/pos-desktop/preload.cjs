@@ -1,0 +1,3 @@
+'use strict';
+const {contextBridge,ipcRenderer}=require('electron');
+contextBridge.exposeInMainWorld('pos',{request:(action,payload={})=>ipcRenderer.invoke('pos:request',{action,payload}),realtimeStatus:()=>ipcRenderer.invoke('pos:realtime-status'),onRealtimeStatus:callback=>{const listener=(_event,status)=>callback(status);ipcRenderer.on('pos:realtime-status',listener);return ()=>ipcRenderer.removeListener('pos:realtime-status',listener);},onChanged:callback=>{const listener=(_event,change)=>callback(change);ipcRenderer.on('pos:changed',listener);return ()=>ipcRenderer.removeListener('pos:changed',listener);}});

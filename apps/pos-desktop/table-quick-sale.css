@@ -1,0 +1,23 @@
+/* True viewport dialog, with shared catalog/cart components and independent scrolling. */
+body.has-table-quick-sale{overflow:hidden}
+dialog.table-quick-modal[open]{position:fixed;inset:0;margin:0;padding:0;border:0;border-radius:0;width:100vw;max-width:none;height:100dvh;max-height:none;overflow:hidden;background:#f3faf8;color:#102c36;display:flex;flex-direction:column;box-shadow:none}
+.table-quick-modal::backdrop{background:#f3faf8}
+.table-quick-head{flex:0 0 auto;display:flex;align-items:center;min-height:70px;padding:12px 80px 12px 24px;background:#fff;border-bottom:1px solid #dfece8}
+.table-quick-head>div{display:flex;align-items:center;gap:14px}.table-quick-head h1{margin:0;font-size:23px;line-height:1.2}
+.table-quick-type{padding:6px 12px;border:1px solid #b7e4dd;border-radius:20px;background:#e3f7f1;font-size:13px;color:#007f72}
+.table-quick-modal>.pos-dialog-close{position:absolute;right:20px;top:13px;width:44px;height:44px;min-width:44px;min-height:44px;margin:0;background:#f1f7f5;color:#426c62;border:1px solid #dceae5;border-radius:12px;font-size:26px;line-height:1;z-index:2}
+.table-quick-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,7fr) minmax(350px,3fr);gap:16px;padding:16px;overflow:hidden}
+.table-quick-catalog{min-height:0;min-width:0;display:flex}.table-quick-catalog .fast-catalog{width:100%;height:100%;margin:0;min-height:0}
+.table-quick-body .fast-cart{height:100%;min-height:0;margin:0;padding:16px;overflow:hidden}
+.table-quick-body .fast-modes{grid-template-columns:1fr}.table-quick-body .fast-modes .table-panel-icon{width:23px;height:23px}
+.table-quick-body .fast-modes button{cursor:default}.table-quick-body .fast-cart-head{margin-bottom:10px}
+.table-quick-body .fast-cart-list{flex:1 1 0;min-height:0;overflow:auto}.table-quick-body .fast-note{display:none}
+.table-quick-warning:not([hidden]){flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 24px;background:#fff2cf;color:#7c5b08}
+.table-quick-warning button,.table-quick-recovery button{min-height:44px;margin:0}
+.table-quick-recovery{max-height:160px;overflow:auto;padding:8px;background:#fff2cf;border-radius:9px;font-size:12px}
+.table-quick-recovery p{margin:0 0 5px}
+@media(max-width:1400px){.table-quick-body{grid-template-columns:minmax(0,1fr) 370px;gap:12px;padding:12px}.table-quick-body .fast-cart{padding:12px}}
+@media(max-height:800px){.table-quick-head{min-height:62px;padding-top:8px;padding-bottom:8px}.table-quick-modal>.pos-dialog-close{top:9px}.table-quick-body{padding:12px}.table-quick-body .fast-cart-foot{padding-top:6px}}
+@media(max-width:1000px){.table-quick-body{grid-template-columns:minmax(0,1fr) minmax(310px,40%);padding:8px;gap:8px}.table-quick-head{padding-left:16px}.table-quick-head h1{font-size:20px}}
+
+.table-quick-body .fast-submit{background:#00a995;border-color:#00a995}

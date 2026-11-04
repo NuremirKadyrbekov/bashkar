@@ -1,0 +1,11 @@
+{
+  "projectRef": "veghvtxwhtvocpuvmrlr",
+  "url": "https://veghvtxwhtvocpuvmrlr.supabase.co",
+  "publicMenuBaseUrl": "https://bashkarmenu-beta.vercel.app",
+  "publishableKey": "sb_publishable_87vdAHgar5znPqDXLcCbIg_mlQGaRnZ",
+  "menuSync": {
+    "enabled": true,
+    "keyId": "menu-v1",
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA21gcn+R9jsZPe2Zl97epD5iIZcLGTFZ5pBCuMtGH1VY=\n-----END PUBLIC KEY-----\n"
+  }
+}

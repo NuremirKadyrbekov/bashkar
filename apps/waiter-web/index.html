@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>Bashkar · Официант</title>
+    <link rel="stylesheet" href="/waiter/style.css" />
+  </head>
+  <body class="waiter-login">
+    <header>
+      <button id="open-menu" type="button" aria-label="Открыть меню">☰</button
+      ><strong>Bashkar</strong
+      ><span class="login-language-wrap"
+        ><svg
+          class="login-language-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18" /></svg
+        ><select id="language" aria-label="Язык">
+          <option value="ru">Русский</option>
+          <option value="ky">Кыргызча</option>
+        </select></span
+      ><button id="open-profile" type="button">
+        <span class="header-person"
+          ><span id="actor"></span><small id="actor-role">Официант</small></span
+        ><span class="header-avatar" aria-hidden="true">♙</span
+        ><span aria-hidden="true">⌄</span></button
+      ><button id="lock" hidden>PIN</button><button id="logout" hidden></button>
+    </header>
+    <p id="notice" role="status" aria-live="polite"></p>
+    <main id="app"></main>
+    <div id="sidebar-backdrop" hidden></div>
+    <aside
+      id="sidebar"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Меню официанта"
+      hidden
+    ></aside>
+    <script src="/waiter/draft-store.js"></script>
+    <script src="/waiter/app.js"></script>
+  </body>
+</html>

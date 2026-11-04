@@ -1,0 +1,11 @@
+.waiter-connection{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:20px;margin:12px 0 18px}
+.waiter-connection-details{min-width:0;flex:1}
+.waiter-connection h2{margin:0 0 8px}
+.waiter-connection p{margin:8px 0 12px}
+.waiter-url{display:block;overflow-wrap:anywhere;font-size:18px;margin:12px 0}
+.waiter-qr{flex:none;width:240px;height:240px;object-fit:contain}
+.waiter-http-setup{max-width:600px;padding:20px}
+.waiter-http-setup h2{margin:0 0 8px}
+.waiter-http-setup label{max-width:420px}
+.waiter-http-setup p{font-size:13px;margin:8px 0}
+@media(max-width:720px){.waiter-connection{flex-direction:column}.waiter-qr{align-self:center}}

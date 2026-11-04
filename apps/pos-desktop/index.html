@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+<head>
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data: https://*.b-cdn.net; object-src 'none'; base-uri 'none'; form-action 'none'">
+ <title>Bashkar POS</title>
+ <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="layout.css"><link rel="stylesheet" href="analytics-overview.css"><link rel="stylesheet" href="analytics-products.css"><link rel="stylesheet" href="shift-history.css"><link rel="stylesheet" href="tables.css"><link rel="stylesheet" href="table-config.css"><link rel="stylesheet" href="table-map.css"><link rel="stylesheet" href="fast-sales.css"><link rel="stylesheet" href="cash-items.css"><link rel="stylesheet" href="order-first-cart.css"><link rel="stylesheet" href="table-quick-sale.css"><link rel="stylesheet" href="login.css"><link rel="stylesheet" href="menu-editor.css"><link rel="stylesheet" href="stop-list.css"><link rel="stylesheet" href="public-menu-editor.css"><link rel="stylesheet" href="menu-import.css"><link rel="stylesheet" href="waiter-onboarding.css"><link rel="stylesheet" href="staff-screen.css"><link rel="stylesheet" href="role-matrix.css">
+</head>
+<body>
+ <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="icon-tables" viewBox="0 0 24 24"><path d="M4 3v7m3-7v7M4 7h3m-1.5 3v11M15 3v8a3 3 0 0 0 6 0V3h-6Zm3 11v7"/></symbol>
+  <symbol id="icon-counter" viewBox="0 0 24 24"><path d="M4 10h16l-1.5 10h-13L4 10Zm3 0V7a5 5 0 0 1 10 0v3M8 14h8"/></symbol>
+  <symbol id="icon-dish" viewBox="0 0 24 24"><path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 11V8m-2 0h4M4 21h16"/></symbol>
+  <symbol id="icon-sales" viewBox="0 0 24 24"><path d="M4 20V10h4v10M10 20V4h4v16m2 0v-7h4v7M3 20h18"/></symbol>
+  <symbol id="icon-computer" viewBox="0 0 24 24"><rect x="2.5" y="3.5" width="19" height="14" rx="2"/><path d="M8 21h8m-4-3.5V21M2.5 14.5h19"/></symbol>
+  <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M3 17h18M5 17a7 7 0 0 1 14 0M12 10V7m-2 0h4M4 20h16"/></symbol>
+  <symbol id="icon-shift" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9V3Zm2 0v7h7A9 9 0 0 0 14 3Z"/></symbol>
+  <symbol id="icon-team" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a5 5 0 0 1 10 0v2H3Zm13-14a3 3 0 0 1 0 6m1 3a5 5 0 0 1 4 5"/></symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.5 2.5 2 1 2.3-1 2.2 3.5-1.8 1.8v2.4L21 14l-2.2 3.5-2.3-1-2 1L14 20h-4l-.5-2.5-2-1-2.3 1-2.2-3.5 1.8-1.8V9.8L3 8l2.2-3.5 2.3 1 2-1L10 2Z"/></symbol>
+  <symbol id="icon-printer" viewBox="0 0 24 24"><path d="M6 8V3h12v5M6 18H4V9h16v9h-2M6 14h12v7H6v-7Zm11-3h1"/></symbol>
+  <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/></symbol>
+  <symbol id="icon-stop" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6 18.4 18.4"/></symbol>
+  <symbol id="icon-back" viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M8 12h13"/></symbol>
+  <symbol id="icon-exit" viewBox="0 0 24 24"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5m3-4 4-4-4-4m-7 4h11"/></symbol>
+ </svg>
+ <div id="app-shell" class="pos-shell">
+  <div id="header-reveal" class="pos-header-reveal" hidden><button id="header-toggle" class="pos-header-toggle" type="button" aria-label="Показать верхнюю панель на 4 секунды" aria-controls="pos-header" aria-expanded="false"><span class="pos-header-toggle-icon" aria-hidden="true">⌄</span><span data-header-label>Панель</span></button></div>
+  <header id="pos-header" class="pos-header">
+   <div class="pos-header-start"><strong class="pos-brand">bash<span>kar</span></strong><span class="pos-header-divider"></span><button id="header-back" class="pos-header-back" type="button" hidden aria-label="Назад"><svg><use href="#icon-back"/></svg></button><span class="pos-branch" id="branch-label">Bashkar POS</span><button id="shift-indicator" class="pos-shift" type="button" hidden></button></div>
+   <div class="pos-header-end"><label class="pos-language-label"><span class="visually-hidden">Язык интерфейса</span><select id="language" aria-label="Язык интерфейса"><option value="ru">Русский</option><option value="ky">Кыргызча</option></select></label><button id="header-settings" class="pos-header-back" type="button" aria-label="Настройки POS" title="Настройки POS" hidden><svg><use href="#icon-settings"/></svg></button><div id="identity" class="pos-identity"></div><button id="switch" class="pos-exit" type="button" hidden aria-label="Выйти" title="Выйти"><svg><use href="#icon-exit"/></svg></button></div>
+  </header>
+  <nav id="nav" class="pos-sidebar" aria-label="Разделы POS" hidden>
+   <div class="pos-sidebar-main">
+    <button data-screen="cashRegister"><svg class="nav-icon"><use href="#icon-computer"/></svg><span data-nav-label>Касса</span></button>
+    <button data-screen="shift"><svg class="nav-icon"><use href="#icon-shift"/></svg><span data-nav-label>Кассовая смена</span></button>
+    <button data-screen="analyticsOverview"><svg class="nav-icon"><use href="#icon-sales"/></svg><span data-nav-label>Аналитика</span></button>
+    <button data-screen="analyticsProducts"><svg class="nav-icon"><use href="#icon-dish"/></svg><span data-nav-label>Продажи блюд</span></button>
+    <button data-screen="sales"><svg class="nav-icon"><use href="#icon-sales"/></svg><span data-nav-label>Журнал продаж</span></button>
+    <button data-screen="employees"><svg class="nav-icon"><use href="#icon-team"/></svg><span data-nav-label>Сотрудники</span></button>
+    <button data-screen="roleMatrix" type="button" disabled title="Раздел временно закрыт"><svg class="nav-icon"><use href="#icon-lock"/></svg><span data-nav-label>Роли и права</span></button>
+    <button data-screen="menu"><svg class="nav-icon"><use href="#icon-menu"/></svg><span data-nav-label>Меню</span></button>
+    <button data-screen="stopList"><svg class="nav-icon"><use href="#icon-stop"/></svg><span data-nav-label>Стоп-лист</span></button>
+    <button data-screen="tableConfig"><svg class="nav-icon"><use href="#icon-tables"/></svg><span data-nav-label>Столы и зоны</span></button>
+    <button data-screen="financialOperations" type="button" disabled title="В разработке"><svg class="nav-icon"><use href="#icon-lock"/></svg><span data-nav-label>Финансовые операции</span></button>
+   </div>
+   <div class="pos-sidebar-tools">
+    <details id="settings-nav-group" class="pos-sidebar-group" hidden>
+     <summary><svg class="nav-icon"><use href="#icon-settings"/></svg><span data-settings-nav-label>Настройки POS</span><span class="pos-sidebar-chevron" aria-hidden="true"></span></summary>
+     <div class="pos-sidebar-submenu">
+      <button data-screen="posSettings"><svg class="nav-icon"><use href="#icon-settings"/></svg><span data-nav-label>Основные</span></button>
+      <button data-screen="printing"><svg class="nav-icon"><use href="#icon-printer"/></svg><span data-nav-label>Печать</span></button>
+      <button data-screen="waiterNetwork"><svg class="nav-icon"><use href="#icon-settings"/></svg><span data-nav-label>Настройка веб-экрана</span></button>
+     </div>
+    </details>
+   </div>
+  </nav>
+  <main id="workspace" class="pos-workspace"><p id="status" role="status" aria-live="polite"></p><div id="screen"></div></main>
+ </div>
+ <aside id="test-client" hidden></aside>
+ <script src="dialogs.js"></script><script src="toast.js"></script><script src="finance.js"></script><script src="shift-finance.js"></script><script src="shift-open.js"></script><script src="orders.js"></script><script src="tables.js"></script><script src="table-config.js"></script><script src="table-map.js"></script><script src="fast-sales.js"></script><script src="cash-items.js"></script><script src="cash-workspace.js"></script><script src="order-first-cart.js"></script><script src="table-quick-sale.js"></script><script src="service-clients.js"></script><script src="layout.js"></script><script src="staff-screen.js"></script><script src="role-matrix.js"></script><script src="stop-list.js"></script><script src="analytics-overview.js"></script><script src="analytics-products.js"></script><script src="renderer.js"></script><script src="menu-editor.js"></script><script src="menu-import.js"></script><script src="menu-sync-ui.js"></script><script src="public-menu-editor.js"></script>
+</body>
+</html>

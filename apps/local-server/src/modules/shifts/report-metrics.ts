@@ -1,0 +1,41 @@
+import type Database from 'better-sqlite3';
+import {requireCondition} from '../../errors';
+
+// Stable, versioned dictionary. Monetary aggregates are decimal integer tiyin strings.
+export const metricsVersion=1;
+export const reportMetrics={
+ completed_count:{unit:'count',source:'sealed PAID + ZERO_SETTLED'},paid_count:{unit:'count',source:'sealed PAID'},zero_count:{unit:'count',source:'sealed ZERO_SETTLED'},
+ finalized_subtotal:{unit:'tyiyn',source:'sum final snapshot.subtotal'},finalized_discount:{unit:'tyiyn',source:'sum final snapshot.discount'},finalized_fees:{unit:'tyiyn',source:'sum individually rounded final fees'},
+ completed_amount:{unit:'tyiyn',source:'subtotal - discount + fees'},payments_registered:{unit:'tyiyn',source:'sum payments in shift'},refunds_registered:{unit:'tyiyn',source:'sum refunds registered in shift'},
+ registrations_difference:{unit:'tyiyn',source:'payments_registered - refunds_registered; not revenue or cash balance'},
+ cancelled_orders_count:{unit:'count',source:'distinct CANCELLED orders'},accepted_items_amount:{unit:'tyiyn',source:'original accepted Item totals including replacements'},
+ removed_items_amount:{unit:'tyiyn',source:'removed quantities at historic unit price excluding CHANGE_COMMENT'},replacement_removed_amount:{unit:'tyiyn',source:'REPLACE_ITEM subset of removed amount'},batches_count:{unit:'count',source:'accepted batches'}
+} as const;
+const methods=['CASH','CARD_MANUAL','QR_TRANSFER_MANUAL'] as const;
+type Method=typeof methods[number];
+const monetary=['finalized_subtotal','finalized_discount','finalized_fees','completed_amount','payments_registered','refunds_registered','registrations_difference','accepted_items_amount','removed_items_amount','replacement_removed_amount'] as const;
+const empty=()=>({completed_count:0,paid_count:0,zero_count:0,cancelled_orders_count:0,batches_count:0,...Object.fromEntries(monetary.map(k=>[k,'0'])) as Record<typeof monetary[number],string>,payments_by_method:Object.fromEntries(methods.map(m=>[m,'0'])),refunds_by_method:Object.fromEntries(methods.map(m=>[m,'0'])),difference_by_method:Object.fromEntries(methods.map(m=>[m,'0'])),refunds_current:'0',refunds_previous:'0',refund_count:0,fees:[] as {id:string;name:string;rate:number;amount:string}[]});
+export function buildMetrics(db:Database.Database,branch:string,shift:string){
+ const slices={ALL:empty(),TABLE:empty(),COUNTER:empty()};
+ type Slice=ReturnType<typeof empty>;
+ const add=(s:Slice,key:string,amount:number|string|bigint)=>{const r=s as unknown as Record<string,unknown>;r[key]=(BigInt(String(r[key]))+BigInt(amount)).toString();};
+ const each=(type:string,fn:(s:Slice)=>void)=>{requireCondition(type==='TABLE'||type==='COUNTER','FINANCIAL_GRAPH_INVALID',500);fn(slices.ALL);fn(slices[type]);};
+ const sealed=db.prepare('SELECT s.*,o.type FROM settlements s JOIN settlement_seals z ON z.branch_id=s.branch_id AND z.settlement_id=s.id JOIN orders o ON o.branch_id=s.branch_id AND o.id=s.order_id WHERE s.branch_id=? AND s.shift_id=?').all(branch,shift) as {id:string;order_id:string;kind:string;amount:number;snapshot:string;type:string}[];
+ for(const s of sealed){const q=JSON.parse(s.snapshot);each(s.type,t=>{t.completed_count++;if(s.kind==='PAID')t.paid_count++;else t.zero_count++;add(t,'finalized_subtotal',q.subtotal);add(t,'finalized_discount',q.discount);add(t,'completed_amount',s.amount);for(const fee of q.fees){add(t,'finalized_fees',fee.amount);let f=t.fees.find(v=>v.id===fee.id&&v.name===fee.name&&v.rate===fee.rate);if(!f){f={id:fee.id,name:fee.name,rate:fee.rate,amount:'0'};t.fees.push(f);}f.amount=(BigInt(f.amount)+BigInt(fee.amount)).toString();}});}
+ const payments=db.prepare('SELECT p.*,o.type FROM payments p JOIN orders o ON o.branch_id=p.branch_id AND o.id=p.order_id WHERE p.branch_id=? AND p.shift_id=? ORDER BY p.rowid').all(branch,shift) as {id:string;method:Method;amount:number;type:string}[];
+ for(const p of payments)each(p.type,s=>{add(s,'payments_registered',p.amount);s.payments_by_method[p.method]=(BigInt(s.payments_by_method[p.method])+BigInt(p.amount)).toString();});
+ const refunds=db.prepare('SELECT r.*,o.type FROM refunds r JOIN orders o ON o.branch_id=r.branch_id AND o.id=r.order_id WHERE r.branch_id=? AND r.shift_id=? ORDER BY r.rowid').all(branch,shift) as {id:string;method:Method;amount:number;type:string;original_shift_id:string}[];
+ for(const p of refunds)each(p.type,s=>{add(s,'refunds_registered',p.amount);add(s,p.original_shift_id===shift?'refunds_current':'refunds_previous',p.amount);s.refund_count++;s.refunds_by_method[p.method]=(BigInt(s.refunds_by_method[p.method])+BigInt(p.amount)).toString();});
+ const batches=db.prepare('SELECT b.id,o.type FROM order_batches b JOIN orders o ON o.id=b.order_id AND o.branch_id=b.branch_id WHERE o.branch_id=? AND o.shift_id=?').all(branch,shift) as {id:string;type:string}[];
+ for(const b of batches)each(b.type,s=>{s.batches_count++;});
+ const items=db.prepare('SELECT i.total,o.type FROM order_items i JOIN order_batches b ON b.id=i.batch_id AND b.branch_id=i.branch_id JOIN orders o ON o.id=b.order_id AND o.branch_id=b.branch_id WHERE o.branch_id=? AND o.shift_id=?').all(branch,shift) as {total:number;type:string}[];
+ for(const i of items)each(i.type,s=>add(s,'accepted_items_amount',i.total));
+ const removed=db.prepare("SELECT l.quantity,i.snapshot,c.type correction_type,o.type FROM order_correction_lines l JOIN order_corrections c ON c.id=l.correction_id AND c.branch_id=l.branch_id JOIN order_items i ON i.id=l.item_id AND i.branch_id=l.branch_id JOIN orders o ON o.id=c.order_id AND o.branch_id=c.branch_id WHERE c.branch_id=? AND c.shift_id=? AND c.type<>'CHANGE_COMMENT'").all(branch,shift) as {quantity:number;snapshot:string;correction_type:string;type:string}[];
+ for(const r of removed){const amount=BigInt(r.quantity)*BigInt(JSON.parse(r.snapshot).unitPrice);each(r.type,s=>{add(s,'removed_items_amount',amount);if(r.correction_type==='REPLACE_ITEM')add(s,'replacement_removed_amount',amount);});}
+ for(const r of db.prepare("SELECT type FROM orders WHERE branch_id=? AND shift_id=? AND status='CANCELLED'").all(branch,shift) as {type:string}[])each(r.type,s=>{s.cancelled_orders_count++;});
+ for(const s of Object.values(slices)){add(s,'registrations_difference',BigInt(s.payments_registered)-BigInt(s.refunds_registered));for(const m of methods)s.difference_by_method[m]=(BigInt(s.payments_by_method[m])-BigInt(s.refunds_by_method[m])).toString();requireCondition(BigInt(s.completed_amount)===BigInt(s.finalized_subtotal)-BigInt(s.finalized_discount)+BigInt(s.finalized_fees)&&s.completed_amount===s.payments_registered,'FINANCIAL_GRAPH_INVALID',500);}
+ const visits=db.prepare('SELECT close_reason AS reason,status FROM table_sessions WHERE branch_id=? AND shift_id=?').all(branch,shift) as {reason:string|null;status:string}[];
+ const unresolved=db.prepare("SELECT id,total,subtotal,discount,type FROM orders WHERE branch_id=? AND shift_id=? AND status='OPEN'").all(branch,shift) as {id:string;total:number;subtotal:number;discount:number;type:string}[];
+ const incidents=db.prepare('SELECT i.id,i.details,r.outcome,r.details resolution_details,r.settlement_id FROM payment_incidents i LEFT JOIN payment_incident_resolutions r ON r.branch_id=i.branch_id AND r.incident_id=i.id WHERE i.branch_id=? AND (i.shift_id=? OR r.shift_id=?) ORDER BY i.rowid').all(branch,shift,shift) as {id:string;details:string;outcome:string|null;resolution_details:string|null;settlement_id:string|null}[];
+ return {metricsVersion,slices,visits:{opened:visits.length,closed:visits.filter(v=>v.status==='CLOSED').length,byReason:Object.fromEntries(['EMPTY','PAID','ZERO_TOTAL','CANCELLED'].map(k=>[k,visits.filter(v=>v.reason===k).length]))},unresolved:{count:unresolved.length,total:unresolved.reduce((n,r)=>n+BigInt(r.total),0n).toString()},knownCases:incidents.map(i=>({id:i.id,state:i.outcome?'RESOLVED':'OPEN',outcome:i.outcome,knownReceipts:JSON.parse(i.details).receipts,settlementId:i.settlement_id,resolution:i.resolution_details?JSON.parse(i.resolution_details):null})),facts:{settlementIds:sealed.map(s=>s.id),paymentIds:payments.map(p=>p.id),refundIds:refunds.map(r=>r.id),batchIds:batches.map(b=>b.id)}};
+}

@@ -1,0 +1,60 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {resolve,join}=require('node:path');
+const {mkdtempSync,mkdirSync,rmSync}=require('node:fs');
+const {tmpdir}=require('node:os');
+const {randomUUID,randomBytes}=require('node:crypto');
+const {_electron}=require('playwright');
+const {fixture,password}=require('../../../dist/apps/local-server/test/fixtures/operations.js');
+const {TableService}=require('../../../dist/apps/local-server/src/modules/tables/table-service.js');
+const {createServer}=require('../../../dist/apps/local-server/src/server.js');
+
+async function main(){
+ const f=await fixture(),userData=mkdtempSync(join(tmpdir(),'bashkar-table-picker-')),output=resolve('artifacts/table-picker-views-qa');mkdirSync(output,{recursive:true});let server,desktop;
+ try{
+  await f.shifts.open(f.token,randomUUID(),'owner',password);
+  const tables=new TableService(f.db,f.bus,f.auth,f.now),zone=await tables.saveZone(f.token,randomUUID(),{zoneId:null,revision:0,name:'Зал',active:true});
+  const mapped=await tables.saveTable(f.token,randomUUID(),{tableId:null,zoneId:zone.id,revision:0,name:'10',active:true});
+  const unplaced=await tables.saveTable(f.token,randomUUID(),{tableId:null,zoneId:zone.id,revision:0,name:'11',active:true});
+  await tables.saveFloorPlan(f.token,randomUUID(),{revision:0,plan:{version:1,zones:[{zoneId:zone.id,kind:'RECT',x:40,y:40,width:520,height:440}],tables:[{tableId:mapped.id,kind:'ROUND',x:200,y:210,rotation:0}]}});
+  f.storage.close();server=await createServer(f.dir,0,true,{...f.trust,pinKeys:{get:()=>randomBytes(64)}});
+  desktop=await _electron.launch({executablePath:require('electron'),args:['--user-data-dir='+userData,resolve('apps/pos-desktop/main.cjs')],env:{...process.env,BASHKAR_DESKTOP_PORT:String(server.server.address().port),BASHKAR_TEST_CLIENT:'1',BASHKAR_TEST_PROFILE:'table-picker-qa'}});
+  const page=await desktop.firstWindow(),errors=[];page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(12000);
+  await page.evaluate(async password=>{await window.pos.request('login',{login:'owner',password});const branch=(await window.pos.request('me')).value.branchId;localStorage.setItem('bashkar.pos.sales-view.'+branch,'FAST_FIRST');},password);await page.reload();await page.locator('.fast-sales').waitFor();
+  await page.locator('.order-first-modes [data-mode=TABLE]').click();
+  await page.evaluate(()=>{const original=api;window.pickerCalls=[];api=async(action,payload)=>{window.pickerCalls.push(action);return original(action,payload);};});
+  await page.locator('.order-first-head-assignment.table').click();const dialog=page.locator('dialog.cash-picker');await dialog.waitFor();
+  assert.equal(await dialog.getByRole('button',{name:'Карточки'}).getAttribute('aria-pressed'),'true');
+  assert.equal(await page.evaluate(()=>window.pickerCalls.filter(action=>action==='floorPlan').length),0);
+  await dialog.getByRole('button',{name:'Карта'}).click();await dialog.locator('svg[aria-label="План зала"] .table-map-table').waitFor();
+  assert.equal(await page.evaluate(()=>window.pickerCalls.filter(action=>action==='floorPlan').length),1);
+  const mapSvg=dialog.locator('svg[aria-label="План зала"]'),initialWidth=await mapSvg.evaluate(node=>node.getBoundingClientRect().width);
+  assert.notEqual(await mapSvg.getAttribute('viewBox'),'0 0 1000 700');assert.equal(await dialog.locator('.table-map-background').count(),0);
+  await dialog.getByRole('button',{name:'Увеличить'}).click();assert.equal(await dialog.locator('.cash-picker-map-scale').innerText(),'125%');assert((await mapSvg.evaluate(node=>node.getBoundingClientRect().width))>initialWidth);assert.equal(await dialog.locator('.cash-picker-map-scroll').evaluate(node=>node.scrollWidth>node.clientWidth),true);
+  assert.equal(await dialog.locator('.cash-picker-unplaced .cash-picker-card').count(),1);
+  assert.equal(await dialog.locator('.table-map-table[aria-disabled="false"]').count(),1);
+  await dialog.getByRole('button',{name:'Карточки'}).click();await dialog.getByRole('button',{name:'Карта'}).click();
+  assert.equal(await dialog.locator('.cash-picker-map-scale').innerText(),'125%');await dialog.getByRole('button',{name:'Вписать план'}).click();assert.equal(await dialog.locator('.cash-picker-map-scale').innerText(),'100%');
+  assert.equal(await page.evaluate(()=>window.pickerCalls.filter(action=>action==='floorPlan').length),1);
+  assert.equal(await page.evaluate(()=>window.pickerCalls.filter(action=>['tableAssign','tableMove','cashVisitOpen'].includes(action)).length),0);
+  await page.screenshot({path:join(output,'map.png'),fullPage:true});
+  await dialog.locator('.cash-picker-unplaced .cash-picker-card').click();await page.waitForFunction(id=>fastState.tableId===id,unplaced.id);
+  await page.locator('dialog.cash-picker').waitFor({state:'detached'});
+  await page.locator('.order-first-head-assignment.table').click();await page.locator('dialog.cash-picker').locator('svg[aria-label="План зала"] .table-map-table').waitFor();
+  assert.equal(await page.locator('dialog.cash-picker').getByRole('button',{name:'Карта'}).getAttribute('aria-pressed'),'true');
+  assert.equal(await page.evaluate(()=>window.pickerCalls.filter(action=>action==='floorPlan').length),2);
+  assert.equal(await page.evaluate(()=>localStorage.getItem(cashPickerViewKey())),'map');
+  await page.locator('dialog.cash-picker svg .table-map-table[aria-disabled="false"]').click();await page.waitForFunction(id=>fastState.tableId===id,mapped.id);await page.locator('dialog.cash-picker').waitFor({state:'detached'});
+  await page.setViewportSize({width:760,height:650});await page.locator('.order-first-head-assignment.table').click();await page.locator('dialog.cash-picker').locator('svg[aria-label="План зала"] .table-map-table').waitFor();
+  assert.equal(await page.locator('dialog.cash-picker').evaluate(node=>node.scrollWidth<=node.clientWidth+1),true);
+  assert.equal(await page.locator('dialog.cash-picker .cash-picker-map-scroll').evaluate(node=>{const zone=node.querySelector('.table-map-zone-floor').getBoundingClientRect(),frame=node.getBoundingClientRect();return zone.top>=frame.top-1&&zone.bottom<=frame.bottom+1;}),true);
+  await page.screenshot({path:join(output,'map-narrow.png'),fullPage:true});
+  await page.keyboard.press('Escape');await page.locator('dialog.cash-picker').waitFor({state:'detached'});
+  await page.evaluate(()=>{const previous=api;api=async(action,payload)=>action==='floorPlan'?Promise.reject(Error('FLOOR_PLAN_UNAVAILABLE')):previous(action,payload);});
+  await page.locator('.order-first-head-assignment.table').click();await page.locator('dialog.cash-picker .cash-picker-map-status').getByText('План зала недоступен. Выберите стол из карточек ниже.').waitFor();
+  assert.equal(await page.locator('dialog.cash-picker .cash-picker-grid .cash-picker-card').count(),2);
+  await page.reload();await page.locator('.fast-sales').waitFor();assert.equal(await page.evaluate(()=>cashPickerPreferredView()),'map');
+  assert.deepEqual(errors,[]);console.log('PASS table picker cards/map, lazy plan request, persisted choice, unplaced table, narrow layout');
+ }finally{if(desktop)await desktop.close();if(server)await server.close();f.close();rmSync(userData,{recursive:true,force:true});}
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});
