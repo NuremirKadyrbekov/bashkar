@@ -21,6 +21,8 @@ jobs:
         run: choco install nsis --yes --no-progress
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Download pinned Electron runtime
+        run: pnpm exec install-electron
       - name: Verify Windows Electron and native dependencies
         run: node infrastructure/windows-service/check-dependencies.cjs
       - name: Type and syntax checks

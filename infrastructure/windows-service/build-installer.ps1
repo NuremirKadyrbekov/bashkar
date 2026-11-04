@@ -6,6 +6,8 @@ if (-not [Environment]::Is64BitOperatingSystem -or [Environment]::OSVersion.Plat
 if ((node -p 'process.versions.node') -ne '24.18.0') { throw 'Use Node.js 24.18.0 for the build.' }
 pnpm install --frozen-lockfile
 if ($LASTEXITCODE -ne 0) { throw 'pnpm install failed' }
+pnpm exec install-electron
+if ($LASTEXITCODE -ne 0) { throw 'Electron runtime download failed' }
 node infrastructure/windows-service/check-dependencies.cjs
 if ($LASTEXITCODE -ne 0) { throw 'Windows dependency check failed' }
 pnpm run build
