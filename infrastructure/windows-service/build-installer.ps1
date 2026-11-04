@@ -78,4 +78,7 @@ if (-not $makensis) { $makensis = 'C:\Program Files (x86)\NSIS\makensis.exe' }
 if (-not (Test-Path $makensis)) { throw 'NSIS makensis.exe not found' }
 & $makensis "/DSTAGE=$stage" "/DOUTPUT=$output" (Join-Path $PSScriptRoot 'installer.nsi')
 if ($LASTEXITCODE -ne 0) { throw 'NSIS build failed' }
-Get-FileHash (Join-Path $output 'Bashkar-POS-Setup-0.1.0.exe') -Algorithm SHA256
+$setup = Join-Path $output 'Bashkar-POS-Setup-0.1.0.exe'
+if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "NSIS did not create installer: $setup" }
+if ((Get-Item -LiteralPath $setup).Length -eq 0) { throw "NSIS created an empty installer: $setup" }
+Get-FileHash -LiteralPath $setup -Algorithm SHA256

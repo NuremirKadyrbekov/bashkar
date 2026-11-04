@@ -1,6 +1,12 @@
 name: Windows installer test build
 on:
   workflow_dispatch:
+    inputs:
+      build_only:
+        description: 'Build Only: skip Vitest, Desktop QA and install smoke test'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build:
@@ -28,19 +34,30 @@ jobs:
       - name: Type and syntax checks
         run: pnpm run check
       - name: Full test suite
+        if: ${{ !inputs.build_only }}
         run: pnpm test
       - name: Electron QA with isolated profile
+        if: ${{ !inputs.build_only }}
         continue-on-error: true # The current QA script has stale screen selectors; report this separately.
         run: pnpm run test:desktop
       - name: Build installer
         shell: powershell
         run: .\infrastructure\windows-service\build-installer.ps1
-      - name: Smoke install and uninstall on disposable runner
+      - name: Verify installer output
         shell: powershell
-        run: .\infrastructure\windows-service\smoke-installer.ps1
+        run: |
+          $setup = 'artifacts/windows-installer/Bashkar-POS-Setup-0.1.0.exe'
+          if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "Installer build did not create $setup" }
+          $file = Get-Item -LiteralPath $setup
+          if ($file.Length -eq 0) { throw "Installer build created an empty file: $setup" }
+          Write-Output "Installer: $($file.FullName) ($($file.Length) bytes)"
+          Get-FileHash -LiteralPath $setup -Algorithm SHA256
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Bashkar-POS-Setup-0.1.0-win-x64-unaccepted
           path: artifacts/windows-installer/Bashkar-POS-Setup-0.1.0.exe
           if-no-files-found: error
+      - name: Smoke install and uninstall on disposable runner
+        if: ${{ !inputs.build_only }}
+        shell: powershell
+        run: .\infrastructure\windows-service\smoke-installer.ps1
