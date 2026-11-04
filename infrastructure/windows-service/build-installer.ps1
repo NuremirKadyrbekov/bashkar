@@ -6,6 +6,8 @@ if (-not [Environment]::Is64BitOperatingSystem -or [Environment]::OSVersion.Plat
 if ((node -p 'process.versions.node') -ne '24.18.0') { throw 'Use Node.js 24.18.0 for the build.' }
 pnpm install --frozen-lockfile
 if ($LASTEXITCODE -ne 0) { throw 'pnpm install failed' }
+node infrastructure/windows-service/check-dependencies.cjs
+if ($LASTEXITCODE -ne 0) { throw 'Windows dependency check failed' }
 pnpm run build
 if ($LASTEXITCODE -ne 0) { throw 'TypeScript build failed' }
 $stage = Join-Path $root 'artifacts\windows-installer\stage'
@@ -23,9 +25,13 @@ if ($LASTEXITCODE -ne 0) { throw 'Print worker bundle failed' }
 pnpm exec esbuild apps/pos-desktop/menu-import-file.cjs --bundle --platform=node --target=node24 --format=cjs "--outfile=$desktop\menu-import-file.cjs"
 if ($LASTEXITCODE -ne 0) { throw 'Desktop import bundle failed' }
 Get-ChildItem apps/pos-desktop -File | Where-Object { $_.Extension -in @('.cjs','.js','.html','.css') -and $_.Name -ne 'menu-import-file.cjs' } | Copy-Item -Destination $desktop
-Copy-Item apps/pos-desktop/assets (Join-Path $desktop 'assets') -Recurse
-Copy-Item apps/waiter-web (Join-Path $stage 'apps\waiter-web') -Recurse
-Copy-Item third-party/fonts (Join-Path $stage 'third-party\fonts') -Recurse
+$assets = Join-Path $desktop 'assets'
+$waiter = Join-Path $stage 'apps\waiter-web'
+$fonts = Join-Path $stage 'third-party\fonts'
+New-Item -ItemType Directory -Path $assets, $waiter, $fonts -Force | Out-Null
+Copy-Item (Join-Path 'apps/pos-desktop/assets' '*') $assets -Recurse -Force
+Copy-Item (Join-Path 'apps/waiter-web' '*') $waiter -Recurse -Force
+Copy-Item (Join-Path 'third-party/fonts' '*') $fonts -Recurse -Force
 $print = Join-Path $stage 'infrastructure\printing'
 New-Item -ItemType Directory -Path $print -Force | Out-Null
 Copy-Item infrastructure/printing/RawPrint.cs, infrastructure/printing/build-helper.ps1 $print
@@ -53,8 +59,10 @@ try {
 $winsw = Join-Path $stage 'BashkarPOSLocalServer.exe'
 Invoke-WebRequest 'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe' -OutFile $winsw
 if ((Get-FileHash $winsw -Algorithm SHA256).Hash.ToLowerInvariant() -ne '05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da') { throw 'WinSW checksum mismatch' }
-$electronExe = (node -p "require('electron')").Trim()
-$electronDir = Split-Path $electronExe
+$electronPackage = (node -p "require.resolve('electron/package.json')").Trim()
+if ($LASTEXITCODE -ne 0) { throw 'Electron package not found' }
+$electronDir = Join-Path (Split-Path $electronPackage) 'dist'
+if (-not (Test-Path (Join-Path $electronDir 'electron.exe'))) { throw 'Electron executable missing from locked dependency' }
 Copy-Item (Join-Path $electronDir '*') $stage -Recurse -Force
 Rename-Item (Join-Path $stage 'electron.exe') 'Bashkar POS.exe'
 $appDir = Join-Path $stage 'resources\app'
