@@ -10,6 +10,7 @@ import type { OperationalServices } from '../../api';
 import { WaiterService } from './waiter-service';
 import { FulfillmentService } from '../orders/fulfillment-service';
 import type { NetworkService } from './network-service';
+import type { MaintenanceGate } from '../../recovery/maintenance-gate';
 export const waiterCookie = '__Host-bashkar-waiter';
 export const httpWaiterCookie = 'bashkar-waiter-http';
 const mutating: Record<string, {
@@ -31,10 +32,12 @@ export async function createWaiterServer(s: OperationalServices, waiter: WaiterS
     listen?: boolean;
     assets?: string;
     printStatus?: (token: string, orderId: string) => unknown;
+    maintenanceGate?: MaintenanceGate;
 } = {}) {
     const http = network.http, tls = http ? undefined : network.tls(), endpoint = http ?? tls!, secure = !http, cookieName = secure ? waiterCookie : httpWaiterCookie;
     const origin = `${secure ? 'https' : 'http'}://${endpoint.ip}:${endpoint.port}`;
     const app = Fastify({ ...(tls ? { https: { key: tls.key, cert: tls.cert, minVersion: 'TLSv1.2' as const } } : {}), bodyLimit: 2 * 1024 * 1024, logger: false, trustProxy: false });
+    options.maintenanceGate?.install(app);
     const eventClients = new Set<{socket:Socket;cookie:string;ticket:string;branchId:string}>();
     const eventFrame = (value:string) => { const data=Buffer.from(value); const header=data.length<126?Buffer.from([0x81,data.length]):Buffer.from([0x81,126,data.length>>8,data.length&255]);return Buffer.concat([header,data]); };
     const rejectEvent = (socket:Socket) => socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');

@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import { PosError, requireCondition } from '../../errors';
-import { digest } from '../../command-bus';
+import { canonical, digest } from '../../command-bus';
 import type { CloudConfig } from '../activation/cloud-activation';
+import type { SigningDeviceIdentity } from '../activation/platform-device';
+import type { VerifiedRelease } from '../../recovery/release-verifier';
 import type { AuthService, Employee } from './auth-service';
 
 type CloudUser={id:string;email:string;email_confirmed_at:string|null;is_anonymous?:boolean};
@@ -88,6 +91,46 @@ export class CloudOwnerAuth {
       this.checks.set(sessionId,check);
     }
     await check;
+  }
+  async requestUpdateGrant(sessionId:string,device:SigningDeviceIdentity,identity:{branchId:string;instanceId:string;registrationId:string},actorId:string,release:VerifiedRelease,operationId:string){
+    await this.verifySession(sessionId,true);
+    const session=this.sessions.get(sessionId);
+    requireCondition(session,'OWNER_CLOUD_RELOGIN_REQUIRED',401);
+    device.assertAvailable();
+    const proof={format:1,action:'INSTALL',operationId,...identity,actorId,releaseId:release.manifest.releaseId,manifestSha256:release.manifestSha256,artifactSha256:release.manifest.artifact.sha256,nonce:randomUUID()};
+    const request={...proof,devicePublicKey:device.publicKey(),deviceSignature:device.sign(canonical(proof))};
+    let response:Response;
+    try{response=await this.network(this.config.url+'/functions/v1/update-authorize',{method:'POST',redirect:'error',headers:{apikey:this.config.publishableKey,authorization:'Bearer '+session.token,'content-type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(15000)});}
+    catch{throw new PosError('UPDATE_CLOUD_UNAVAILABLE',503);}
+    if(response.status===401||response.status===403)throw new PosError('UPDATE_CLOUD_DENIED',403);
+    if(response.status===409)throw new PosError('UPDATE_OPERATION_REPLAY',409);
+    if(!response.ok)throw new PosError('UPDATE_CLOUD_UNAVAILABLE',503);
+    const reader=response.body?.getReader();requireCondition(reader,'UPDATE_CLOUD_UNAVAILABLE',503);
+    const parts:Uint8Array[]=[];let size=0;
+    for(;;){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>8192){await reader.cancel();throw new PosError('UPDATE_CLOUD_RESPONSE_INVALID',503);}parts.push(part.value);}
+    let grant:unknown;
+    try{grant=JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw new PosError('UPDATE_CLOUD_RESPONSE_INVALID',503);}
+    return grant;
+  }
+  async requestUpdateDownload(sessionId:string,device:SigningDeviceIdentity,identity:{branchId:string;instanceId:string;registrationId:string},releaseId:string){
+    await this.verifySession(sessionId,true);
+    const session=this.sessions.get(sessionId);requireCondition(session,'OWNER_CLOUD_RELOGIN_REQUIRED',401);
+    requireCondition(/^[a-z0-9_-]{1,80}$/.test(releaseId),'UPDATE_RELEASE_ID_INVALID',400);
+    device.assertAvailable();
+    const proof={format:1,action:'DOWNLOAD',releaseId,...identity,nonce:randomUUID(),issuedAt:this.now()};
+    const request={...proof,devicePublicKey:device.publicKey(),deviceSignature:device.sign(canonical(proof))};
+    let response:Response;
+    try{response=await this.network(this.config.url+'/functions/v1/update-release-download',{method:'POST',redirect:'error',headers:{apikey:this.config.publishableKey,authorization:'Bearer '+session.token,'content-type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(15000)});}
+    catch{throw new PosError('UPDATE_CLOUD_UNAVAILABLE',503);}
+    if(response.status===401||response.status===403)throw new PosError('UPDATE_CLOUD_DENIED',403);
+    if(!response.ok)throw new PosError('UPDATE_CLOUD_UNAVAILABLE',503);
+    const reader=response.body?.getReader();requireCondition(reader,'UPDATE_CLOUD_UNAVAILABLE',503);
+    const parts:Uint8Array[]=[];let size=0;
+    for(;;){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>32768){await reader.cancel();throw new PosError('UPDATE_CLOUD_RESPONSE_INVALID',503);}parts.push(part.value);}
+    let result:Record<string,unknown>;
+    try{result=JSON.parse(Buffer.concat(parts).toString('utf8')) as Record<string,unknown>;}catch{throw new PosError('UPDATE_CLOUD_RESPONSE_INVALID',503);}
+    requireCondition(result&&result.releaseId===releaseId&&typeof result.downloadUrl==='string'&&typeof result.manifestSha256==='string'&&/^[0-9a-f]{64}$/.test(result.manifestSha256)&&typeof result.artifactSha256==='string'&&/^[0-9a-f]{64}$/.test(result.artifactSha256)&&Number.isSafeInteger(result.sizeBytes)&&Number(result.sizeBytes)>0&&Number.isSafeInteger(result.expiresAt)&&Number(result.expiresAt)>this.now()&&Number(result.expiresAt)<=this.now()+330000&&result.signedRelease&&typeof result.signedRelease==='object','UPDATE_CLOUD_RESPONSE_INVALID',503);
+    return result as {releaseId:string;downloadUrl:string;manifestSha256:string;artifactSha256:string;sizeBytes:number;expiresAt:number;signedRelease:unknown};
   }
   verifyLocalSession(sessionId:string){
     const session=this.sessions.get(sessionId);

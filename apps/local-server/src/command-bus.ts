@@ -26,8 +26,9 @@ export class CommandBus {
   onCommit?: (branchId:string,type:string)=>void;
   private queued = 0;
   private tail: Promise<unknown> = Promise.resolve();
-  constructor(private readonly db: Database.Database, private readonly now = Date.now, private readonly limit = 64, private readonly assertStorage = () => {}) {}
+  constructor(private readonly db: Database.Database, private readonly now = Date.now, private readonly limit = 64, private readonly assertStorage = () => {}, private readonly assertNewCommand = () => {}) {}
   run<T>(input: { id: string; type: string; payload: unknown; actor: Actor }, authorize: () => void, apply: () => T): Promise<T> {
+    try { this.assertNewCommand(); } catch (error) { return Promise.reject(error); }
     if (this.queued >= this.limit) return Promise.reject(new PosError('WRITE_QUEUE_FULL', 503));
     this.queued++;
     let applied=false;

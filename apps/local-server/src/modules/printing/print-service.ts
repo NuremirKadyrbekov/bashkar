@@ -238,7 +238,7 @@ export class PrintService {
     }
     async tick() { if (this.stopping || this.ticking)
         return; this.ticking = true; try {
-        while (this.running.size < 2) {
+        while (!this.stopping && this.running.size < 2) {
             const claim = await this.claim();
             if (!claim)
                 break;
@@ -252,7 +252,14 @@ export class PrintService {
         this.ticking = false;
     } }
     async start() { await this.recover(); this.timer = setInterval(() => { void this.tick().catch(() => { }); }, 500); this.timer.unref(); }
-    async stop() { this.stopping = true; if (this.timer)
-        clearInterval(this.timer); if(this.statusTimer)clearTimeout(this.statusTimer); await Promise.all([...this.running]); }
+    async stop() {
+        this.stopping = true;
+        if (this.timer) clearInterval(this.timer);
+        if (this.statusTimer) clearTimeout(this.statusTimer);
+        while (this.ticking || this.running.size) {
+            await Promise.all([...this.running]);
+            if (this.ticking) await new Promise<void>(resolve => setTimeout(resolve, 10));
+        }
+    }
     async idle() { await this.tick(); await Promise.all([...this.running]); }
 }

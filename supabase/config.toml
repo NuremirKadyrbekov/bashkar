@@ -21,3 +21,15 @@ verify_jwt = false
 [functions.public-menu]
 # Public GET access is limited by owner opt-in and a server-only branch projection.
 verify_jwt = false
+
+[functions.update-authorize]
+# Online Owner Auth plus registered-device Ed25519 proof; no browser access.
+verify_jwt = false
+
+[functions.update-release-upload]
+# Online platform publisher auth, signed manifest and private Bunny readback.
+verify_jwt = false
+
+[functions.update-release-download]
+# Online Owner and registered-device proof before a short-lived Bunny CDN URL.
+verify_jwt = false
